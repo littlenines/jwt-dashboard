@@ -1,5 +1,7 @@
+@use "../abstracts" as *;
+
 .login-wrapper {
-    max-width: 453px;
+    max-width: $form-max-width;
 }
 
 .login_form {

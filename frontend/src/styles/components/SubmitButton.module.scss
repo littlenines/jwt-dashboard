@@ -1,0 +1,11 @@
+@use "../abstracts" as *;
+
+.submit_button {
+    padding: 10px;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    color: $color-white;
+    background-color: $color-primary-light;
+    border-radius: $radius-md;
+}

@@ -12,3 +12,22 @@
   align-items: center;
   justify-content: center;
 }
+
+// shared by both ellipses: Radial #444CE7 81% -> 29%, at 20% layer opacity
+@function doughnut-radial() {
+  @return radial-gradient(circle at 50% 50%, rgba($color-doughnut-blue, 0.162), rgba($color-doughnut-blue, 0.058));
+}
+
+// Ellipse 1 (528px, inner): Linear #A4BCFD 100% -> #444CE7 81%, at 20% layer opacity
+@mixin doughnut-inner-fill {
+  background:
+    linear-gradient(180deg, rgba($color-doughnut-light, 0.2), rgba($color-doughnut-blue, 0.162)),
+    doughnut-radial();
+}
+
+// Ellipse 2 (606px, outer): Linear #444CE7 81% -> transparent, at 20% layer opacity
+@mixin doughnut-outer-fill {
+  background:
+    linear-gradient(180deg, rgba($color-doughnut-blue, 0.162), rgba($color-doughnut-blue, 0)),
+    doughnut-radial();
+}
