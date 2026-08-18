@@ -63,14 +63,14 @@
 }
 
 .side_illustration_title {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #E0EAFF;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-illustration-text;
 }
 
 .side_illustration_subtitle {
-    font-size: 1.6rem;
-    color: rgba(224, 234, 255, 0.75);
+    font-size: $font-size-base;
+    color: rgba($color-illustration-text, 0.75);
 }
 
 .doughnut {
