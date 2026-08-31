@@ -1,5 +1,6 @@
 $color-primary: #6172f3;
 $color-primary-light: #8098f9;
+$color-primary-dark: #2d31a6;
 $color-text: #1a1a1a;
 $color-text-muted: #71717a;
 $color-bg: #ffffff;
@@ -17,6 +18,7 @@ $breakpoint-lg: 1024px;
 $form-max-width: 453px;
 
 $font-size-base: 1.6rem;
+$font-size-md: 1.8rem;
 $font-size-lg: 2rem;
 $font-size-xxl: 4rem;
 
@@ -29,3 +31,10 @@ $color-doughnut-light: #a4bcfd;
 $color-doughnut-blue: #444ce7;
 
 $color-illustration-text: #e0eaff;
+$color-illustration-text-muted: rgba($color-illustration-text, 0.75);
+$color-illustration-text-faint: rgba($color-illustration-text, 0.5);
+
+$color-field-border: rgba($color-primary-light, 0.5);
+$color-field-bg: rgba($color-primary-light, 0.1);
+$color-placeholder: rgba($color-primary-dark, 0.2);
+$color-focus-ring: rgba($color-primary, 0.5);

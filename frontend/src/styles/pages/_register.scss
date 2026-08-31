@@ -28,6 +28,14 @@
     flex-direction: column;
     gap: 10px;
     margin-bottom: 20px;
+
+    label {
+        margin-bottom: 15px;
+
+        a {
+            color: $color-primary-light;
+        }
+    }
 }
 
 .register_has_account {
@@ -46,7 +54,15 @@
     background-color: $color-primary;
     display: grid;
     place-items: center;
+    position: relative;
+}
+
+.side_illustration_image {
+    width: 100%;
+    display: grid;
+    place-items: center;
     overflow: hidden;
+    position: absolute;
 
     img {
         grid-area: 1 / 1;
@@ -59,7 +75,19 @@
 }
 
 .side_illustration_info {
+    position: absolute;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
     text-align: center;
+}
+
+.side_illustration_info_slider {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
 }
 
 .side_illustration_title {
@@ -70,7 +98,8 @@
 
 .side_illustration_subtitle {
     font-size: $font-size-base;
-    color: rgba($color-illustration-text, 0.75);
+    color: $color-illustration-text-muted;
+    margin-bottom: 10px;
 }
 
 .doughnut {
@@ -89,4 +118,20 @@
         border-radius: 50%;
         @include doughnut-inner-fill;
     }
+}
+
+.dot_long {
+    display: block;
+    border-radius: 4px;
+    width: 16px;
+    height: 8px;
+    background-color: $color-illustration-text;
+}
+
+.dot {
+    display: block;
+    border-radius: 4px;
+    width: 8px;
+    height: 8px;
+    background-color: $color-illustration-text-faint;
 }

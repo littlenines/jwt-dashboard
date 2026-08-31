@@ -1,0 +1,58 @@
+@use "../abstracts" as *;
+
+$checkbox-size: 20px;
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+// Native input: hidden but still focusable / accessible
+.checkbox_input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.checkbox_box {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: $checkbox-size;
+    height: $checkbox-size;
+    border: 2px solid $color-primary-light;
+    border-radius: 4px;
+    background-color: transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+
+    svg {
+        width: 85%;
+        height: 85%;
+        color: $color-text;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+}
+
+.checkbox_input:checked + .checkbox_box {
+    background-color: $color-primary-light;
+
+    svg {
+        opacity: 1;
+    }
+}
+
+.checkbox_input:focus-visible + .checkbox_box {
+    outline: 2px solid $color-focus-ring;
+    outline-offset: 2px;
+}
+
+.checkbox_input:disabled + .checkbox_box {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
