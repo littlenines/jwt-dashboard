@@ -1,0 +1,12 @@
+@use "../abstracts" as *;
+
+.auth_heading_title {
+    font-weight: $font-weight-bold;
+    font-size: $font-size-xxl;
+}
+
+.auth_heading_subtitle {
+    font-size: $font-size-lg;
+    color: $color-text-muted;
+    margin-bottom: 25px;
+}

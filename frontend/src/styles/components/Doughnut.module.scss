@@ -1,0 +1,19 @@
+@use "../abstracts" as *;
+
+.doughnut {
+    grid-area: 1 / 1;
+    position: relative;
+    width: 606px;
+    max-width: 90%;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    @include doughnut-outer-fill;
+
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 6.44%; // (606 - 528) / 606, centers the 528px inner circle
+        border-radius: 50%;
+        @include doughnut-inner-fill;
+    }
+}

@@ -1,0 +1,30 @@
+@use "../abstracts" as *;
+
+.auth_panel {
+    max-width: $form-max-width;
+}
+
+.auth_panel_form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+
+    label {
+        margin-bottom: 15px;
+
+        a {
+            color: $color-primary-light;
+        }
+    }
+}
+
+.auth_panel_footer {
+    text-align: center;
+    font-size: $font-size-base;
+
+    a {
+        color: $color-primary-light;
+        font-weight: $font-weight-semibold;
+    }
+}
