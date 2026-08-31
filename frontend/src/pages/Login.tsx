@@ -21,7 +21,7 @@ const submitLogin = async (event: SubmitEvent<HTMLFormElement>) => {
 return (
      <AuthLayout
       title="Login to your Account"
-      subtitle="Welcome back! Select method to log in:"
+      subtitle="Welcome back!"
       onSubmit={submitLogin}
       footer={<>Don't have an account? <Link to={'/register'}>Create an account</Link></>}
       illustration={{
