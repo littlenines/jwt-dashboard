@@ -10,7 +10,7 @@ import SubmitButton from "@/components/SubmitButton";
 import api from "@/config/api";
 
 const Register = () => {
-  const [register, setRegister] = useState({ username: '', email: '', password: '', confirmPassword: '', remember: false })
+  const [register, setRegister] = useState({ username: '', email: '', password: '', confirmPassword: '', accept: false })
 
   const submitRegister = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -34,7 +34,7 @@ const Register = () => {
       <Input icon={<Envelope />} type="email" placeholder="Email" value={register.email} onChange={(event) => setRegister({ ...register, email: event.target.value })}/>
       <Input icon={<ShieldSlash />} type="password" placeholder="Password" value={register.password} onChange={(event) => setRegister({ ...register, password: event.target.value })} />
       <Input icon={<ShieldSlash />} type="password" placeholder="Confirm password" value={register.confirmPassword} onChange={(event) => setRegister({ ...register, confirmPassword: event.target.value })}/>
-      <Checkbox label={<p>Accept <Link to={'/'}>terms and conditions</Link>.</p>} checked={register.remember} onChange={(event) => setRegister({ ...register, remember: event.target.checked})} />
+      <Checkbox label={<p>Accept <Link to={'/'}>terms and conditions</Link>.</p>} checked={register.accept} onChange={(event) => setRegister({ ...register, accept: event.target.checked})} />
       <SubmitButton>Sign up</SubmitButton>
     </AuthLayout>
   )

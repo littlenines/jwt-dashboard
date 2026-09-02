@@ -7,11 +7,12 @@ import {
   verifyRefreshToken,
 } from "#lib/jwt";
 import { hashToken } from "#lib/crypto";
+import { getRefreshTokenLifetime } from "#lib/refreshTokenPolicy";
 
 const router = express.Router();
 
 router.post("/login", async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password, remember } = req.body;
 
   const findUser = await prisma.user.findUnique({
     where: {
@@ -31,11 +32,14 @@ router.post("/login", async (req: Request, res: Response) => {
 
       const hashedRefreshToken = hashToken(refreshToken);
 
+      const { maxAge: refreshTokenMaxAge, expiresAt: refreshTokenExpire } = getRefreshTokenLifetime(!!remember);
+
       await prisma.refreshToken.create({
         data: {
           hashedToken: hashedRefreshToken,
           userId: findUser.id,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7d
+          remember: !!remember,
+          expiresAt: refreshTokenExpire,
         },
         omit: {
           hashedToken: true,
@@ -48,7 +52,7 @@ router.post("/login", async (req: Request, res: Response) => {
         httpOnly: true,
         secure: isProduction,
         sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, //7d
+        ...(remember ? { maxAge: refreshTokenMaxAge } : {}),
       });
 
       res.cookie("accessToken", token, {
@@ -68,9 +72,11 @@ router.post("/login", async (req: Request, res: Response) => {
 });
 
 router.post("/register", async (req: Request, res: Response) => {
-  const { email, username, password, confirmPassword } = req.body;
+  const { email, username, password, confirmPassword, accept } = req.body;
 
   if (password !== confirmPassword) return res.status(400).json({ message: "Passwords do not match" });
+
+  if (!accept) return res.status(400).json({ message: "You need to accept terms and conditions." });
 
   try {
     const hashedPassword = await argon2.hash(password);
@@ -80,11 +86,14 @@ router.post("/register", async (req: Request, res: Response) => {
         email: email,
         username: username,
         password: hashedPassword,
+        accept: accept,
       },
       omit: {
         id: true,
         password: true,
         username: true,
+        accept: true,
+        updatedAt: true
       },
     });
     return res.status(201).json({ user });
@@ -125,6 +134,8 @@ router.post("/refresh", async (req: Request, res: Response) => {
       sub: verifiedRefreshToken.sub,
     });
     const newHashedToken = hashToken(newRefreshToken);
+    const { remember } = storedRefreshToken;
+    const { maxAge: refreshTokenMaxAge, expiresAt: refreshTokenExpire } = getRefreshTokenLifetime(remember);
 
     await prisma.$transaction([
       prisma.refreshToken.delete({ where: { id: storedRefreshToken.id } }),
@@ -132,7 +143,8 @@ router.post("/refresh", async (req: Request, res: Response) => {
         data: {
           hashedToken: newHashedToken,
           userId: verifiedRefreshToken.sub,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7d
+          remember,
+          expiresAt: refreshTokenExpire,
         },
       }),
     ]);
@@ -148,7 +160,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
       httpOnly: true,
       secure: isProduction,
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+      ...(remember ? { maxAge: refreshTokenMaxAge } : {}),
     });
 
     return res.status(200).json({ message: "Refreshed" });

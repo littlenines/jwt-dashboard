@@ -17,6 +17,7 @@ model User {
   email         String         @unique
   username      String         @unique
   password      String
+  accept        Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
@@ -24,9 +25,10 @@ model User {
 
 model RefreshToken {
   id           String   @id @default(uuid())
-  hashedToken String   @unique
+  hashedToken  String   @unique
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  remember     Boolean  @default(false)
   expiresAt    DateTime
   createdAt    DateTime @default(now())
 }
