@@ -1,5 +1,5 @@
 import { signToken, signRefreshToken } from "#lib/jwt";
-import { getRefreshTokenLifetime } from "#lib/refreshTokenPolicy";
+import { getRefreshTokenLifetime } from "#lib/tokenPolicy";
 import { type MintedTokens } from "./auth.types";
 
 export const issueTokens = async (userId: string, remember: boolean): Promise<MintedTokens> => {

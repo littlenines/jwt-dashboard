@@ -10,37 +10,27 @@ import { setAuthCookies, clearAuthCookies } from "./auth.cookies";
 export const loginController = async (req: Request, res: Response) => {
   const { email, password, remember } = req.body;
 
-  try {
-    const tokens = await loginService(email, password, remember);
+  const tokens = await loginService(email, password, remember);
 
-    if (!tokens) return res.status(400).json({ message: "Invalid email or password" });
+  if (!tokens) return res.status(400).json({ message: "Invalid email or password" });
 
-    setAuthCookies(res, tokens);
+  setAuthCookies(res, tokens);
 
-    return res.status(200).json({ message: "Logged in" });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Something went wrong. Please try again later." });
-  }
+  return res.status(200).json({ message: "Logged in" });
 };
 
 export const registerController = async (req: Request, res: Response) => {
   const { email, username, password, accept } = req.body;
 
-  try {
-    const result = await registerService(email, username, password, accept);
+  const result = await registerService(email, username, password, accept);
 
-    if ("conflict" in result) {
-      const message = result.conflict === "email" ? "Email already registered" : "Username already taken";
+  if ("conflict" in result) {
+    const message = result.conflict === "email" ? "Email already registered" : "Username already taken";
 
-      return res.status(409).json({ message });
-    }
-
-    return res.status(201).json({ user: result });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Something went wrong. Please try again later." });
+    return res.status(409).json({ message });
   }
+
+  return res.status(201).json({ user: result });
 };
 
 export const refreshController = async (req: Request, res: Response) => {
@@ -48,31 +38,24 @@ export const refreshController = async (req: Request, res: Response) => {
 
   if (!currentRefreshToken) return res.status(401).json({ message: "No refresh token." });
 
-  try {
-    const tokens = await refreshService(currentRefreshToken);
+  const tokens = await refreshService(currentRefreshToken);
 
-    if (!tokens) {
-      clearAuthCookies(res);
-      return res.status(401).json({ message: "Invalid or expired refresh token" });
-    }
-
-    setAuthCookies(res, tokens);
-
-    return res.status(200).json({ message: "Refreshed" });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Something went wrong. Please try again later." });
+  if (!tokens) {
+    clearAuthCookies(res);
+    return res.status(401).json({ message: "Invalid or expired refresh token" });
   }
+
+  setAuthCookies(res, tokens);
+
+  return res.status(200).json({ message: "Refreshed" });
 };
 
 export const logoutController = async (req: Request, res: Response) => {
-  try {
-    await logoutService(req.cookies?.refreshToken);
-  } catch (error) {
+  clearAuthCookies(res);
+
+  await logoutService(req.cookies?.refreshToken).catch((error) => {
     console.error(error);
-  } finally {
-    clearAuthCookies(res);
-  }
+  });
 
   return res.status(200).json({ message: "Logged out" });
 };

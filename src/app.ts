@@ -1,19 +1,19 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
-import router from './routes';
 import cookieParser from 'cookie-parser';
+import router from './routes';
+import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
 
 const app = express();
-
-app.use(express.json())
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(helmet());
-app.use(router);
+app.use(express.json());
 app.use(cookieParser());
+app.use(router);
+app.use(errorHandler);
 
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
-});
+app.listen(PORT, () => { console.log(`Server is running on port ${PORT}`); });

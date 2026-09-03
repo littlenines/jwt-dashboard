@@ -2,6 +2,8 @@ services:
   db:
     image: postgres:17
     restart: unless-stopped
+    # These must match the credentials in .env DATABASE_URL
+    # (postgresql://<user>:<password>@localhost:5432/<db>).
     environment:
       POSTGRES_USER: nines
       POSTGRES_PASSWORD: admin

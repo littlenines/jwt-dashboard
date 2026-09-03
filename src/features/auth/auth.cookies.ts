@@ -1,5 +1,6 @@
 import { type Response } from "express";
 import { isProduction } from "#lib/env";
+import { ACCESS_TOKEN } from "#lib/tokenPolicy";
 import { type IssuedTokens } from "./auth.types";
 
 const baseCookie = {
@@ -8,11 +9,8 @@ const baseCookie = {
   sameSite: "strict" as const,
 };
 
-// Keep in sync with the access-token lifetime in #lib/jwt (signToken).
-const ACCESS_TOKEN_MAX_AGE = 15 * 60 * 1000; // 15min
-
 export const setAuthCookies = (res: Response, tokens: IssuedTokens) => {
-  res.cookie("accessToken", tokens.accessToken, {...baseCookie, maxAge: ACCESS_TOKEN_MAX_AGE});
+  res.cookie("accessToken", tokens.accessToken, {...baseCookie, maxAge: ACCESS_TOKEN.maxAgeMs});
   res.cookie("refreshToken", tokens.refreshToken, {...baseCookie, ...(tokens.remember ? { maxAge: tokens.refreshTokenMaxAge } : {})});
 };
 
