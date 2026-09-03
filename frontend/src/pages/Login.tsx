@@ -14,8 +14,7 @@ const [login, setLogin] = useState({ email: '', password: '', remember: false })
 const submitLogin = async (event: SubmitEvent<HTMLFormElement>) => {
   event.preventDefault();
 
-  const loginFetch = await api.post("auth/login", login)
-  console.log(loginFetch)
+  await api.post("auth/login", login)
 }
 
 return (
