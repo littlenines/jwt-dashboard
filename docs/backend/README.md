@@ -3,7 +3,7 @@
 A small Express + JWT authentication API. These docs explain **every file, function, and
 decision** in the backend so the codebase can be understood without reading all the source.
 
-> Frontend lives in `frontend/` and is not covered here yet.
+> The React client is documented in [../frontend/](../frontend/README.md).
 
 ## Index
 
