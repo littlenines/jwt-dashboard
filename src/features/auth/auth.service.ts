@@ -1,22 +1,21 @@
 import { prisma } from "#lib/prisma";
 import argon2 from "argon2";
+import { Prisma } from "#generated/prisma/client";
 import { hashToken } from "#lib/crypto";
-import { signToken, signRefreshToken, verifyRefreshToken } from "#lib/jwt";
-import { getRefreshTokenLifetime } from "#lib/refreshTokenPolicy";
+import { verifyRefreshToken } from "#lib/jwt";
+import { issueTokens } from "./auth.tokens";
+import { type IssuedTokens, type RegisterConflict } from "./auth.types";
 
 export const loginService = async (
   email: string,
   password: string,
   remember: boolean,
-) => {
+): Promise<IssuedTokens | null> => {
   const user = await prisma.user.findUnique({ where: { email } });
 
-  if (!user || !(await argon2.verify(user.password, password))) throw new Error("Invalid email or password");
+  if (!user || !(await argon2.verify(user.password, password))) return null;
 
-  const accessToken = await signToken({ sub: user.id });
-  const refreshToken = await signRefreshToken({ sub: user.id });
-
-  const { maxAge: refreshTokenMaxAge, expiresAt } = getRefreshTokenLifetime(remember);
+  const { accessToken, refreshToken, refreshTokenMaxAge, expiresAt } = await issueTokens(user.id, remember);
 
   await prisma.refreshToken.create({
     data: {
@@ -30,46 +29,53 @@ export const loginService = async (
   return { accessToken, refreshToken, remember, refreshTokenMaxAge };
 };
 
-export const registerService = async (email: string, username: string, password: string, accept: boolean ) => {
-  const hashedPassword = await argon2.hash(password);
+export const registerService = async (email: string, username: string, password: string, accept: boolean) => {
+  const [emailTaken, usernameTaken] = await Promise.all([
+    prisma.user.findUnique({ where: { email }, select: { id: true } }),
+    prisma.user.findUnique({ where: { username }, select: { id: true } }),
+  ]);
 
-  const user = await prisma.user.create({
-    data: {
-      email: email,
-      username: username,
-      password: hashedPassword,
-      accept: accept,
-    },
-    omit: {
-      id: true,
-      password: true,
-      username: true,
-      accept: true,
-      updatedAt: true
-    },
-  });
+  if (emailTaken) return { conflict: "email" } as const satisfies RegisterConflict;
+  if (usernameTaken) return { conflict: "username" } as const satisfies RegisterConflict;
 
-  return user;
-}
+  try {
+    return await prisma.user.create({
+      data: {
+        email,
+        username,
+        password: await argon2.hash(password),
+        accept,
+      },
+      omit: {
+        password: true,
+        accept: true,
+        updatedAt: true,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return { conflict: "email" } as const satisfies RegisterConflict;
+    }
 
-export const refreshService = async (currentRefreshToken: string) => {
-  const payload = await verifyRefreshToken(currentRefreshToken);
+    throw error;
+  }
+};
 
-  const stored = await prisma.refreshToken.findUnique({
-    where: { hashedToken: hashToken(currentRefreshToken) },
-  });
+export const refreshService = async (currentRefreshToken: string): Promise<IssuedTokens | null> => {
+  const payload = await verifyRefreshToken(currentRefreshToken).catch(() => null);
+
+  if (!payload) return null;
+
+  const stored = await prisma.refreshToken.findUnique({where: { hashedToken: hashToken(currentRefreshToken) }});
 
   if (!stored || stored.expiresAt < new Date()) {
     if (stored) await prisma.refreshToken.delete({ where: { id: stored.id } });
-    throw new Error("Invalid or expired refresh token");
+    return null;
   }
 
   const { remember } = stored;
 
-  const accessToken = await signToken({ sub: payload.sub });
-  const refreshToken = await signRefreshToken({ sub: payload.sub });
-
-  const { maxAge: refreshTokenMaxAge, expiresAt } = getRefreshTokenLifetime(remember);
+  const { accessToken, refreshToken, refreshTokenMaxAge, expiresAt } = await issueTokens(payload.sub, remember);
 
   await prisma.$transaction([
     prisma.refreshToken.delete({ where: { id: stored.id } }),
@@ -89,5 +95,5 @@ export const refreshService = async (currentRefreshToken: string) => {
 export const logoutService = async (refreshToken: string | undefined) => {
   if (!refreshToken) return;
 
-  await prisma.refreshToken.deleteMany({ where: { hashedToken: hashToken(refreshToken) } });
+  await prisma.refreshToken.deleteMany({where: { hashedToken: hashToken(refreshToken) }});
 };
