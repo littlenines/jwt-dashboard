@@ -23,15 +23,9 @@ export const loginController = async (req: Request, res: Response) => {
 
     if (!result) return res.status(400).json({ message: "Invalid email or password" });
 
-    res.cookie("accessToken", result.accessToken, {
-      ...baseCookie,
-      maxAge: 15 * 60 * 1000,
-    });
+    res.cookie("accessToken", result.accessToken, { ...baseCookie, maxAge: 15 * 60 * 1000 });
 
-    res.cookie("refreshToken", result.refreshToken, {
-      ...baseCookie,
-      ...(remember ? { maxAge: result.refreshTokenMaxAge } : {}),
-    });
+    res.cookie("refreshToken", result.refreshToken, { ...baseCookie, ...(remember ? { maxAge: result.refreshTokenMaxAge } : {}) });
 
     return res.status(200).json({ message: "Logged in" });
   } catch (error) {
@@ -70,15 +64,9 @@ export const refreshController = async (req: Request, res: Response) => {
   try {
     const { accessToken, refreshToken, remember, refreshTokenMaxAge } = await refreshService(currentRefreshToken);
 
-    res.cookie("accessToken", accessToken, {
-      ...baseCookie,
-      maxAge: 15 * 60 * 1000,
-    });
+    res.cookie("accessToken", accessToken, { ...baseCookie, maxAge: 15 * 60 * 1000 });
 
-    res.cookie("refreshToken", refreshToken, {
-      ...baseCookie,
-      ...(remember ? { maxAge: refreshTokenMaxAge } : {}),
-    });
+    res.cookie("refreshToken", refreshToken, { ...baseCookie, ...(remember ? { maxAge: refreshTokenMaxAge } : {}) });
 
     return res.status(200).json({ message: "Refreshed" });
   } catch {

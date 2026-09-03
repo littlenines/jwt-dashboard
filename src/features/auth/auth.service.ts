@@ -11,9 +11,7 @@ export const loginService = async (
 ) => {
   const user = await prisma.user.findUnique({ where: { email } });
 
-  if (!user || !(await argon2.verify(user.password, password))) {
-    throw new Error("Invalid email or password");
-  }
+  if (!user || !(await argon2.verify(user.password, password))) throw new Error("Invalid email or password");
 
   const accessToken = await signToken({ sub: user.id });
   const refreshToken = await signRefreshToken({ sub: user.id });
@@ -90,7 +88,6 @@ export const refreshService = async (currentRefreshToken: string) => {
 
 export const logoutService = async (refreshToken: string | undefined) => {
   if (!refreshToken) return;
-  await prisma.refreshToken.deleteMany({
-    where: { hashedToken: hashToken(refreshToken) },
-  });
+
+  await prisma.refreshToken.deleteMany({ where: { hashedToken: hashToken(refreshToken) } });
 };
