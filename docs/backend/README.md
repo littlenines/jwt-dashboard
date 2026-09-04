@@ -71,7 +71,8 @@ src/
     auth/                     the auth feature (one folder, one concern)
       auth.route.ts           routes for /auth/*  (path -> middleware -> controller)
       auth.controller.ts      HTTP layer: read req, call service, map result to a response
-      auth.service.ts         business logic + database access
+      auth.service.ts         business logic: what a DB result *means*, no raw queries
+      auth.repository.ts      every raw Prisma call for this feature, no business logic
       auth.tokens.ts          issueTokens(): mint an access+refresh pair
       auth.cookies.ts         set / clear the auth cookies (cookie config lives here)
       auth.validate.ts        zod schemas for login / register bodies
@@ -90,13 +91,17 @@ tsconfig.json                 see conventions.md
 ### The layering rule
 
 ```
-route  ->  controller  ->  service  ->  lib
+route  ->  controller  ->  service  ->  repository  ->  lib/prisma
                     \-> cookies -> lib/env
    everything -> types  (types imports nothing)
 ```
 
 - **lib/** = *mechanism*. Generic, reusable, knows nothing about auth. (`sign a JWT`, `hash a string`.)
-- **feature service** = *policy*. Your app's rules. (`a login mints two tokens`, `an email must be unique`.)
+- **repository** = *raw data access*. One function per query, named for what it fetches/writes.
+  No business logic, no interpretation of the result.
+- **feature service** = *policy*. Your app's rules, and what a repository result *means*.
+  (`a login mints two tokens`, `an email must be unique`, `a unique-constraint error means this
+  email is taken`.)
 - **controller** = *HTTP adapter*. Translates between HTTP and the service. Owns status codes,
   cookies, and response shapes. Holds **no** business logic and **no** database access.
 - A controller is allowed to be more than one line — it needs to map different service outcomes

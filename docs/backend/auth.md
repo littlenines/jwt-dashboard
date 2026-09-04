@@ -4,7 +4,7 @@
 [request-flow.md](./request-flow.md) for the generic `validate` / `errorHandler` middleware.
 
 Files: `src/features/auth/` — `auth.route.ts`, `auth.controller.ts`, `auth.service.ts`,
-`auth.tokens.ts`, `auth.cookies.ts`, `auth.validate.ts`, `auth.types.ts`.
+`auth.repository.ts`, `auth.tokens.ts`, `auth.cookies.ts`, `auth.validate.ts`, `auth.types.ts`.
 
 ---
 
@@ -71,42 +71,71 @@ which logs it and returns a generic `500`.
 
 ---
 
-## `auth.service.ts` — business logic + DB
+## `auth.service.ts` — business logic
+
+Holds **no raw Prisma calls** — every query goes through `auth.repository.ts`. The service
+decides what a repository result *means* (bad credentials? a race? an expired token?);
+the repository just fetches/writes.
 
 Return contract: **`null` (or a small result object) = an expected failure; `throw` = something
 unexpected.** Controllers rely on this to pick 4xx vs 5xx.
 
 ### `loginService(email, password, remember): Promise<IssuedTokens | null>`
-1. `prisma.user.findUnique({ where: { email } })`.
+1. `findUserByEmail(email)`.
 2. No user, **or** `argon2.verify(hash, password)` fails → return `null`.
 3. `issueTokens(user.id, remember)` → access + refresh JWT + lifetime.
-4. Persist the refresh token: `prisma.refreshToken.create` with `hashToken(refreshToken)`
-   (sha256, not the raw token).
+4. `createRefreshToken({ hashedToken: hashToken(refreshToken), userId, remember, expiresAt })` —
+   sha256 of the token is stored, never the raw value.
 5. Return `{ accessToken, refreshToken, remember, refreshTokenMaxAge }`.
 
 ### `registerService(email, username, password, accept): Promise<user | RegisterConflict>`
-1. Two parallel `findUnique` lookups (unique‑index hits) for the email and the username.
+1. `findUserIdByEmail` + `findUserIdByUsername` in parallel (unique‑index hits).
 2. `email` taken → `{ conflict: "email" }`; else `username` taken → `{ conflict: "username" }`.
    Email is checked first.
-3. `prisma.user.create` with `password: await argon2.hash(password)` and
-   `omit: { password, accept, updatedAt }` so the returned object is safe to send back.
+3. `createUser({ email, username, password: await argon2.hash(password), accept })` — the
+   repository's `omit` already strips `password`/`accept`/`updatedAt` from the result.
 4. `catch`: a Prisma `P2002` (unique violation) here means a **race** — someone inserted a
    matching row between step 1 and step 3 — so return `{ conflict: "email" }` as a fallback.
-   Any other error is re‑thrown.
+   Any other error is re‑thrown. (Interpreting the Prisma error code is why the service still
+   imports `Prisma` from the generated client, even though it never calls `prisma` directly.)
 
 ### `refreshService(currentRefreshToken): Promise<IssuedTokens | null>`
 1. `verifyRefreshToken(token)` — bad signature / expired JWT is caught and becomes `null`.
-2. Look up `hashToken(token)` in `RefreshToken`.
-3. Not found, or `expiresAt` in the past → delete the stale row if present, return `null`.
-4. **Rotation:** in one `prisma.$transaction`, delete the old row and create a new one for a
-   freshly minted pair. The old refresh token is now dead — a stolen token is single‑use.
+2. `findRefreshTokenByHash(hashToken(token))`.
+3. Not found, or `expiresAt` in the past → `deleteRefreshTokenById` the stale row if present,
+   return `null`.
+4. **Rotation:** `rotateRefreshToken(...)` — one `$transaction` that deletes the old row and
+   creates a new one for a freshly minted pair. The old refresh token is now dead — a stolen
+   token is single‑use.
 5. New lifetime follows the stored `remember` flag.
 6. Return the new `IssuedTokens`.
 
 ### `logoutService(refreshToken?): Promise<void>`
 - No token → return.
-- `prisma.refreshToken.deleteMany({ where: { hashedToken } })` — `deleteMany` returns
+- `deleteRefreshTokenByHash(hashToken(refreshToken))` — backed by `deleteMany`, which returns
   `{ count: 0 }` instead of throwing when nothing matches, so logout is idempotent.
+
+---
+
+## `auth.repository.ts` — raw data access
+
+Every Prisma call for this feature, each as a small named function. No business logic, no
+error interpretation — that's the service's job (see above).
+
+| Function | Query |
+|----------|-------|
+| `findUserByEmail(email)` | `prisma.user.findUnique({ where: { email } })` |
+| `findUserIdByEmail(email)` | same, `select: { id: true }` — for the register conflict check |
+| `findUserIdByUsername(username)` | same, by `username` |
+| `createUser({ email, username, password, accept })` | `prisma.user.create`, with the response `omit` baked in |
+| `createRefreshToken({ hashedToken, userId, remember, expiresAt })` | `prisma.refreshToken.create` |
+| `findRefreshTokenByHash(hashedToken)` | `prisma.refreshToken.findUnique` |
+| `deleteRefreshTokenById(id)` | `prisma.refreshToken.delete` |
+| `deleteRefreshTokenByHash(hashedToken)` | `prisma.refreshToken.deleteMany` |
+| `rotateRefreshToken({ oldId, hashedToken, userId, remember, expiresAt })` | `prisma.$transaction([delete, create])` |
+
+Callers pass an already‑hashed token — hashing happens in the service (`hashToken` is a `lib`
+primitive; *deciding* to hash before storing is policy).
 
 ---
 
