@@ -3,6 +3,7 @@ import {
   loginService,
   registerService,
   refreshService,
+  meService,
   logoutService,
 } from "./auth.service";
 import { setAuthCookies, clearAuthCookies } from "./auth.cookies";
@@ -49,6 +50,13 @@ export const refreshController = async (req: Request, res: Response) => {
 
   return res.status(200).json({ message: "Refreshed" });
 };
+
+export const meController = async (req: Request, res: Response) => {
+  const user = await meService(req?.userId)
+
+  if (!user) return res.status(401).json({ message: "Not Authenticated" })
+  return res.status(200).json({user})
+}
 
 export const logoutController = async (req: Request, res: Response) => {
   clearAuthCookies(res);
