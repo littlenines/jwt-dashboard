@@ -11,7 +11,7 @@ decision** in the backend so the codebase can be understood without reading all 
 |-----|--------|
 | [conventions.md](./conventions.md) | TypeScript config, subpath imports, environment variables |
 | [data-model.md](./data-model.md)   | Prisma schema — `User`, `RefreshToken` |
-| [request-flow.md](./request-flow.md) | `app.ts` middleware chain, routing, `validate` + `errorHandler` middleware |
+| [request-flow.md](./request-flow.md) | `app.ts` middleware chain, routing, `validate` / `errorHandler` / `requireAuth` middleware |
 | [auth.md](./auth.md)               | The `auth` feature file‑by‑file, and how the token model works |
 | [lib.md](./lib.md)                 | `src/lib/` shared primitives |
 | [api.md](./api.md)                 | Endpoint reference + the security rationale |
@@ -65,7 +65,11 @@ src/
 
   middleware/
     validate.ts               generic "validate req.body against a zod schema" middleware
+    requireAuth.ts            verify the access-token cookie; set req.userId or 401
     errorHandler.ts           central Express error handler (last in the chain)
+
+  types/
+    express.d.ts              adds req.userId to Express's Request type
 
   features/
     auth/                     the auth feature (one folder, one concern)

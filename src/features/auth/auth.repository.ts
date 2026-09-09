@@ -6,7 +6,8 @@ export const findUserIdByEmail = (email: string) => prisma.user.findUnique({ whe
 
 export const findUserIdByUsername = (username: string) => prisma.user.findUnique({ where: { username }, select: { id: true } });
 
-export const findUserById = (id: string | undefined) => prisma.user.findUnique({ where: { id },  omit: { password: true, accept: true, updatedAt: true } });
+export const findUserById = (id: string) =>
+  prisma.user.findUnique({ where: { id }, omit: { password: true, accept: true, updatedAt: true } });
 
 export const createUser = (data: {
   email: string;

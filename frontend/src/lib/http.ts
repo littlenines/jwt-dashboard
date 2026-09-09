@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const api = axios.create({
+export const http = axios.create({
   baseURL: "/",
   withCredentials: true,
 });
@@ -8,7 +8,7 @@ const api = axios.create({
 let isRefreshing = false;
 let pendingRequests: (() => void)[] = [];
 
-api.interceptors.response.use(
+http.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
@@ -19,7 +19,7 @@ api.interceptors.response.use(
 
     if (isRefreshing) {
       return new Promise((resolve) => {
-        pendingRequests.push(() => resolve(api(originalRequest)));
+        pendingRequests.push(() => resolve(http(originalRequest)));
       });
     }
 
@@ -27,10 +27,10 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      await api.post("/auth/refresh");
+      await http.post("/auth/refresh");
       pendingRequests.forEach((retry) => retry());
       pendingRequests = [];
-      return api(originalRequest);
+      return http(originalRequest);
     } catch (refreshError) {
       pendingRequests = [];
       return Promise.reject(refreshError);
@@ -39,5 +39,3 @@ api.interceptors.response.use(
     }
   },
 );
-
-export default api;

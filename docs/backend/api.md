@@ -36,6 +36,17 @@ No body. Requires the `refreshToken` cookie.
 | `401`  | missing / invalid / expired token | clears cookies; `{ "message": ... }` |
 | `500`  | unexpected | generic message |
 
+## `GET /auth/me`
+No body. Requires a valid `accessToken` cookie (`requireAuth`). Used by the client to check
+"am I logged in" and hydrate the session.
+| Status | When | Body |
+|--------|------|------|
+| `200`  | authenticated | `{ "user": { id, email, username, createdAt } }` |
+| `401`  | no / invalid / expired access token | `{ "message": "Not authenticated" }` |
+
+> A `401` here is normal when the access token has expired — the client's axios interceptor
+> calls `/auth/refresh` and retries automatically.
+
 ## `POST /auth/logout`
 No body. Uses the `refreshToken` cookie if present.
 | Status | When | Body / effect |

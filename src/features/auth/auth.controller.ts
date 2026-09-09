@@ -52,11 +52,12 @@ export const refreshController = async (req: Request, res: Response) => {
 };
 
 export const meController = async (req: Request, res: Response) => {
-  const user = await meService(req?.userId)
+  const user = await meService(req.userId!);
 
-  if (!user) return res.status(401).json({ message: "Not Authenticated" })
-  return res.status(200).json({user})
-}
+  if (!user) return res.status(401).json({ message: "Not authenticated" });
+
+  return res.status(200).json({ user });
+};
 
 export const logoutController = async (req: Request, res: Response) => {
   clearAuthCookies(res);

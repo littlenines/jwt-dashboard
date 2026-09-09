@@ -16,9 +16,12 @@ Each folder has its own `README.md` index. Start there.
    hashed in the DB), both as `httpOnly` `SameSite=strict` cookies.
 3. Client makes requests via the shared axios instance (`withCredentials: true`); cookies ride
    along automatically.
-4. On a `401`, the axios interceptor calls `/auth/refresh` once (queuing concurrent failures),
+4. On load / refresh, the client calls `GET /auth/me` (behind the `requireAuth` middleware) to
+   learn whether it has a session and to hydrate the current user. `<ProtectedRoute>` gates
+   `/dashboard` on the result.
+5. On a `401`, the axios interceptor calls `/auth/refresh` once (queuing concurrent failures),
    gets fresh cookies, and replays the failed request.
-5. `/auth/logout` deletes the refresh‑token row and clears both cookies.
+6. `/auth/logout` deletes the refresh‑token row and clears both cookies.
 
 Dev: Vite proxies `/auth/*` to the backend on `:3000`, so it's same‑origin and cookies work
 with no CORS setup.

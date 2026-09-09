@@ -2,13 +2,14 @@
 
 [← index](./README.md)
 
-How a request travels through the app: the middleware chain, routing, and the two generic
-middleware (`validate`, `errorHandler`).
+How a request travels through the app: the middleware chain, routing, and the middleware
+(`validate`, `errorHandler`, `requireAuth`).
 
 ## 1. `src/app.ts` — the middleware chain
 
 ```ts
-dotenv.config();                 // load .env into process.env
+import "dotenv/config";          // FIRST import — see conventions.md "Env loading order"
+// ...
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -44,6 +45,7 @@ router.use('/auth', authRouter);   // everything in auth.route.ts is under /auth
 | `POST /auth/login`   | `validate(loginSchema)`          | `loginController`    |
 | `POST /auth/register`| `validate(registerSchema)`       | `registerController` |
 | `POST /auth/refresh` | —                                | `refreshController`  |
+| `GET  /auth/me`      | `requireAuth`                    | `meController`       |
 | `POST /auth/logout`  | —                                | `logoutController`   |
 
 A route is: **path → middleware chain → controller**. Each middleware either calls `next()` or
@@ -81,3 +83,29 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 4‑arg `ErrorRequestHandler`, registered last in `app.ts`. Express 5 routes any unhandled throw
 or async rejection from a route here. **This is why the controllers carry no `try/catch`** —
 they only handle the *expected* outcomes their services report; anything else bubbles up here.
+
+## 5. `src/middleware/requireAuth.ts` — protecting routes
+
+```ts
+export const requireAuth: RequestHandler = async (req, res, next) => {
+  const token = req.cookies?.accessToken;
+  if (!token) return res.status(401).json({ message: "Not authenticated" });
+
+  try {
+    const { sub } = await verifyToken(token); // jose also throws on expiry
+    req.userId = sub;
+    next();
+  } catch {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+};
+```
+
+- Reads the **access‑token cookie**, verifies it (`#lib/jwt`), and on success stamps
+  `req.userId` for the controller. Missing / invalid / expired → `401`, chain stops.
+- `req.userId` is typed via `src/types/express.d.ts` (`declare global { namespace Express {
+  interface Request { userId?: string } } }`).
+- Apply per‑route: `router.get("/me", requireAuth, meController)`. Add it to any future
+  route that needs a logged‑in user.
+- It does **not** try to refresh an expired access token — that's the client's job (the
+  frontend axios interceptor calls `/auth/refresh` on a `401` and retries).

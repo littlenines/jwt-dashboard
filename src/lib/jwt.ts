@@ -1,19 +1,22 @@
 import { SignJWT, jwtVerify } from "jose";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "#lib/tokenPolicy";
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
-const refreshSecret = new TextEncoder().encode(process.env.JWT_REFRESH!);
+// Read the secrets lazily. Module-load-time `process.env` access is fragile:
+// in ESM this file may be evaluated before .env is loaded.
+const encoder = new TextEncoder();
+const accessSecret = () => encoder.encode(process.env.JWT_SECRET);
+const refreshSecret = () => encoder.encode(process.env.JWT_REFRESH);
 
 export async function signToken(payload: { sub: string }) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(ACCESS_TOKEN.jwtExpiration)
-    .sign(secret);
+    .sign(accessSecret());
 }
 
 export async function verifyToken(token: string) {
-  const { payload } = await jwtVerify(token, secret);
+  const { payload } = await jwtVerify(token, accessSecret());
   return payload as { sub: string };
 }
 
@@ -22,10 +25,10 @@ export async function signRefreshToken(payload: { sub: string }) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(REFRESH_TOKEN.jwtExpiration)
-    .sign(refreshSecret);
+    .sign(refreshSecret());
 }
 
 export async function verifyRefreshToken(token: string) {
-  const { payload } = await jwtVerify(token, refreshSecret);
+  const { payload } = await jwtVerify(token, refreshSecret());
   return payload as { sub: string };
 }

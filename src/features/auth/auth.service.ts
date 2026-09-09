@@ -96,4 +96,4 @@ export const logoutService = async (refreshToken: string | undefined) => {
   await deleteRefreshTokenByHash(hashToken(refreshToken));
 };
 
-export const meService = async (id: string | undefined) => findUserById(id);
+export const meService = (id: string) => findUserById(id);

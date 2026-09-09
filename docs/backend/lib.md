@@ -22,8 +22,11 @@ HS256 JWTs via `jose`. Two independent keys. Lifetimes come from `#lib/tokenPoli
 | `signRefreshToken`   | `JWT_REFRESH`  | `REFRESH_TOKEN.jwtExpiration` (60 d)  | `{ sub: userId }` |
 | `verifyRefreshToken` | `JWT_REFRESH`  | —     | returns `{ sub }` (throws if invalid) |
 
-`verifyToken` (access) has no caller yet — it's for a future "require auth" middleware on
-protected routes.
+`verifyToken` (access) is used by the `requireAuth` middleware
+([request-flow.md](./request-flow.md#5-srcmiddlewarerequireauthts--protecting-routes)).
+
+The secrets are read **lazily** (`() => encoder.encode(process.env.JWT_SECRET)`), not at module
+load — see [conventions.md](./conventions.md#env-loading-order).
 
 ## `crypto.ts`
 

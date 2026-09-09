@@ -2,8 +2,16 @@
 
 [← index](./README.md)
 
-All function components. All presentational except `AuthLayout` (composition). Styling is via
-CSS Modules from `src/styles/components/` — see [styling.md](./styling.md).
+All function components. All presentational except `AuthLayout` (composition) and
+`ProtectedRoute` (reads session state). Styling is via CSS Modules from
+`src/styles/components/` — see [styling.md](./styling.md).
+
+## Routing
+
+### `ProtectedRoute` — `ProtectedRoute.tsx`
+The auth gate. A layout route (`<Outlet />`): `useAuth()` → `loading` renders a placeholder,
+`guest` renders `<Navigate to="/" replace />`, `authed` renders the child route. UX only — the
+real check is the backend `requireAuth` middleware. Details in [routing.md](./routing.md#srccomponentsprotectedroutetsx--the-gate).
 
 ## Layout / structure
 

@@ -63,6 +63,13 @@ which logs it and returns a generic `500`.
 4. Success → `setAuthCookies` (the tokens are **rotated** — see service) + `200 "Refreshed"`.
    A real error (e.g. DB down) throws through to the central handler → `500`.
 
+### `meController` — behind `requireAuth`
+1. `requireAuth` has already run (route middleware), so `req.userId` is set — otherwise the
+   request never reached here (`401`).
+2. `meService(req.userId!)` → the public user, or `null` (user deleted since the token was
+   issued) → `401`.
+3. `200 { user }`.
+
 ### `logoutController`
 1. `clearAuthCookies(res)` **unconditionally** — logout must always clear client state.
 2. `logoutService(req.cookies?.refreshToken)` as best‑effort; a failure is `.catch`‑logged, not
@@ -115,6 +122,10 @@ unexpected.** Controllers rely on this to pick 4xx vs 5xx.
 - `deleteRefreshTokenByHash(hashToken(refreshToken))` — backed by `deleteMany`, which returns
   `{ count: 0 }` instead of throwing when nothing matches, so logout is idempotent.
 
+### `meService(id): Promise<PublicUser | null>`
+- `findUserById(id)`. Pure pass‑through — the "who am I" query. The `id` comes from
+  `req.userId`, set by `requireAuth` (see [request-flow.md](./request-flow.md#5-srcmiddlewarerequireauthts--protecting-routes)).
+
 ---
 
 ## `auth.repository.ts` — raw data access
@@ -125,6 +136,7 @@ error interpretation — that's the service's job (see above).
 | Function | Query |
 |----------|-------|
 | `findUserByEmail(email)` | `prisma.user.findUnique({ where: { email } })` |
+| `findUserById(id)` | `prisma.user.findUnique({ where: { id } })` with the response `omit` — for `/auth/me` |
 | `findUserIdByEmail(email)` | same, `select: { id: true }` — for the register conflict check |
 | `findUserIdByUsername(username)` | same, by `username` |
 | `createUser({ email, username, password, accept })` | `prisma.user.create`, with the response `omit` baked in |

@@ -37,5 +37,17 @@ Relative imports (`./auth.service`) are used *within* a feature folder; `#lib/..
 | `JWT_SECRET`   | `src/lib/jwt.ts`           | HMAC key for **access** tokens |
 | `JWT_REFRESH`  | `src/lib/jwt.ts`           | HMAC key for **refresh** tokens (separate key = a leaked access secret can't forge refresh tokens) |
 
-`.env` is loaded by `dotenv` in `app.ts` (`dotenv.config()`) and by `import "dotenv/config"` in
-`prisma.ts` / `prisma.config.ts`.
+### Env loading order
+
+`app.ts`'s **first line** is `import "dotenv/config";` — before any other import. This matters:
+ES modules evaluate all imports (depth‑first) *before* the importing file's body runs, so a
+plain `dotenv.config()` call lower in `app.ts` would execute **after** `./routes` (and its
+whole `#lib/*` tree) has already been evaluated.
+
+For the same reason, `#lib/jwt.ts` reads its secrets **lazily** —
+`() => encoder.encode(process.env.JWT_SECRET)` inside each function, not
+`const secret = ...encode(process.env.JWT_SECRET)` at module scope. A module‑scope read would
+capture `undefined` if the module loaded before `.env`, and `jose` then throws
+"Zero‑length key" on the first `sign`.
+
+`prisma.config.ts` also does `import "dotenv/config"` (the Prisma CLI loads it separately).

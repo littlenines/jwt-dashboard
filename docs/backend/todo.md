@@ -2,8 +2,6 @@
 
 [← index](./README.md)
 
-- **No `requireAuth` middleware / protected routes yet.** `verifyToken` (access) is unused.
-  Needed for any `/me`‑style endpoint.
 - **No rate limiting** on `/login` and `/register` — brute force / enumeration is unbounded.
 - `.env` `APP_ENV` is `"locale"`. It works (anything ≠ `"production"` = dev), but rename it to
   something sensible, and set `APP_ENV=production` in the deployed environment or `Secure`
