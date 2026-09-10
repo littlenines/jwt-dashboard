@@ -86,7 +86,7 @@ Each page is markup only — all state and behaviour come from a hook in `src/ho
 
 ### `Dashboard.tsx`
 - Reads `useAuth()` — `<ProtectedRoute>` guarantees `status === "authed"`, so `auth.user` is available.
-- Shows `Welcome, {username}` + a **Log out** button → `authApi.logout()` → `refetch()` → `navigate("/")`.
+- Shows `Welcome, {username}` + a **Log out** button → `authApi.logout()` → `auth.clear()` (local, no request) → `navigate("/")`.
 
 ## The auth flow, end to end
 
@@ -96,4 +96,4 @@ Each page is markup only — all state and behaviour come from a hook in `src/ho
    - **no session** → both fail → `guest`.
 2. User submits login → cookies set → `refetch()` flips state to `authed` → `navigate("/dashboard")`.
 3. `<ProtectedRoute>` sees `authed` → renders `<Dashboard>`.
-4. Logout → cookies cleared → `refetch()` → `guest` → any later visit to `/dashboard` redirects to `/`.
+4. Logout → `authApi.logout()` clears cookies → `auth.clear()` sets `guest` → any later visit to `/dashboard` redirects to `/`.

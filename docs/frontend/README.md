@@ -80,7 +80,7 @@ src/
   context/
     auth/                      STATE (one folder per context, mirrors backend features/auth/)
       authContext.ts           the React context object + AuthState / AuthContextValue types
-      AuthProvider.tsx         <AuthProvider> — fetches /auth/me on mount, exposes { ...state, refetch }
+      AuthProvider.tsx         <AuthProvider> — fetches /auth/me on mount, exposes { ...state, refetch, clear }
       useAuth.ts               the useAuth() hook
 
   hooks/                       PRESENTATION LOGIC (keeps pages to markup only)

@@ -123,7 +123,7 @@ also export a context or hook):
 | File | Exports | Contains |
 |------|---------|----------|
 | `authContext.ts` | `AuthContext`, `AuthState`, `AuthContextValue` | just `createContext(...)` + types — no JSX |
-| `AuthProvider.tsx` | `<AuthProvider>` | on mount calls `authApi.me()`; holds `state` + a `refetch()` |
+| `AuthProvider.tsx` | `<AuthProvider>` | on mount calls `authApi.me()`; holds `state` + `refetch()` + `clear()` |
 | `useAuth.ts` | `useAuth()` | `useContext` + a "must be inside provider" guard |
 
 `AuthState` is a discriminated union:
@@ -139,7 +139,10 @@ type AuthState =
 - resolves → `{ status: "authed", user }`
 - rejects (interceptor already tried & failed to refresh) → `{ status: "guest" }`
 
-`refetch()` re‑runs that check — call it after login/logout so the UI updates without a reload.
+- `refetch()` re‑runs the `/auth/me` check — use it after **login** (you don't have the user
+  object yet, only `{ message }`).
+- `clear()` just sets `{ status: "guest" }`, no request — use it after **logout** (you already
+  know the outcome; hitting `/auth/me` would 401 and also trigger a pointless `/auth/refresh`).
 
 ---
 

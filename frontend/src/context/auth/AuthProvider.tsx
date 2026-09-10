@@ -23,8 +23,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     void load();
   };
 
+  const clear = () => setState({ status: "guest" });
+
   return (
-    <AuthContext.Provider value={{ ...state, refetch }}>
+    <AuthContext.Provider value={{ ...state, refetch, clear }}>
       {children}
     </AuthContext.Provider>
   );

@@ -6,6 +6,9 @@ export type AuthState =
   | { status: "authed"; user: User }
   | { status: "guest" };
 
-export type AuthContextValue = AuthState & { refetch: () => void };
+export type AuthContextValue = AuthState & {
+  refetch: () => void;
+  clear: () => void;
+};
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
