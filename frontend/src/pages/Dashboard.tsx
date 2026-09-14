@@ -1,27 +1,24 @@
-import { useNavigate } from "react-router";
-import { authApi } from "@/api/auth";
-import { useAuth } from "@/context/auth/useAuth";
+import Navigation from "@/components/Navigation";
+import Title from "@/components/Title";
+import Button from "@/components/Button";
+import Plus from "@/components/icons/Plus";
+import UserCountCards from "@/components/UserCountCards";
 
 const Dashboard = () => {
-  const auth = useAuth();
-  const navigate = useNavigate();
-
-  const username = auth.status === "authed" ? auth.user.username : "";
-
-  const logout = async () => {
-    try {
-      await authApi.logout();
-    } finally {
-      auth.clear();
-      navigate("/");
-    }
-  };
 
   return (
-    <main>
-      <p>Welcome, {username}</p>
-      <button type="button" onClick={logout}>Log out</button>
-    </main>
+    <>
+      <Navigation />
+      <main className="global_layout">
+        <Title title="User Management" description="Manage user accounts, roles, and permissions for your shop"  >
+          <Button icon={<Plus />}>Add User</Button>
+        </Title>
+
+        <UserCountCards />
+
+        
+      </main>
+    </>
   );
 };
 

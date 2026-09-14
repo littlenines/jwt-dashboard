@@ -1,0 +1,18 @@
+@use "../abstracts" as *;
+
+.page_info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.page_info_title {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+    line-height: 1.5;
+}
+
+.page_info_description {
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+}

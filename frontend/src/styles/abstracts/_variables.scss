@@ -3,9 +3,20 @@ $color-primary-light: #8098f9;
 $color-primary-dark: #2d31a6;
 $color-text: #1a1a1a;
 $color-text-muted: #71717a;
+$color-text-secondary: #717182;
+$color-text-subtle: #6B6B6B;
+$color-text-dark: #0a0a0a;
 $color-bg: #ffffff;
 $color-white: #ffffff;
 $color-error: #dc2626;
+
+$color-surface-muted: #fafafa;
+$color-border: rgba(0, 0, 0, 0.1);
+$color-hover: oklch(.97 0 0);
+
+$color-success: #00a63e;
+$color-warning: #f54a00;
+$color-danger: #e7000b;
 
 $spacing-sm: 0.5rem;
 $spacing-md: 1rem;
@@ -17,15 +28,21 @@ $breakpoint-lg: 1024px;
 
 $form-max-width: 477px;
 
+$font-size-xs: 1.2rem;
+$font-size-sm: 1.4rem;
 $font-size-base: 1.6rem;
 $font-size-md: 1.8rem;
 $font-size-lg: 2rem;
+$font-size-xl: 2.4rem;
 $font-size-xxl: 4rem;
 
+$font-weight-medium: 500;
 $font-weight-semibold: 600;
 $font-weight-bold: 700;
 
 $radius-md: 10px;
+
+$sidebar-width: 255px;
 
 $color-doughnut-light: #a4bcfd;
 $color-doughnut-blue: #444ce7;

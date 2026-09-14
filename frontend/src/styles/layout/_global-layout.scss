@@ -1,0 +1,12 @@
+@use "../abstracts" as *;
+
+.global_layout {
+    display: flex;
+    flex-direction: column;
+    margin-left: $sidebar-width;
+    min-height: 100vh;
+    gap: 24px;
+    padding: 32px 40px;
+}
+
+

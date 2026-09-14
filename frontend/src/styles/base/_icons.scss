@@ -1,0 +1,10 @@
+@use "../abstracts" as *;
+
+.chevron_left {
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border-top: 1.5px solid $color-text-dark;
+  border-left: 1.5px solid $color-text-dark;
+  transform: rotate(-45deg);
+}

@@ -1,0 +1,30 @@
+@use "../abstracts" as *;
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    font-family: inherit;
+    color: $color-white;
+    background-color: $color-text-dark;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+
+    svg {
+        flex-shrink: 0;
+    }
+
+    &:hover {
+        opacity: 0.85;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}

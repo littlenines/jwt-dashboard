@@ -1,0 +1,41 @@
+@use "../abstracts" as *;
+
+.count_card {
+    border: 1px solid $color-border;
+    border-radius: 12px;
+    padding: 24px 20px;
+    width: 100%;
+}
+
+.count_card_info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+
+    p {
+        font-weight: $font-weight-medium;
+        font-size: $font-size-sm;
+        text-transform: capitalize;
+    }
+}
+
+.count_card_count {
+    font-weight: $font-weight-bold;
+    font-size: $font-size-xl;
+}
+
+.total {
+    color: $color-text-dark;
+}
+
+.active {
+    color: $color-success;
+}
+
+.inactive {
+    color: $color-warning;
+}
+
+.suspended {
+    color: $color-danger;
+}
