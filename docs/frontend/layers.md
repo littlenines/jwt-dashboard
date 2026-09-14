@@ -176,4 +176,18 @@ const Login = () => {
 
 `setField` is a typed single‑field updater: `<K extends keyof Values>(key: K, value: Values[K])`.
 
+### UI hooks (not page hooks)
+
+`useFormSubmit` / `useLogin` / `useRegister` above all belong to a *page* (form state + a submit
+flow through the data/state layers). Two more hooks in `src/hooks/` are a different thing
+entirely — generic component *behavior*, with no knowledge of auth, data, or state:
+
+| Hook | Returns | Does |
+|------|---------|------|
+| `useClickOutside(ref, onClickOutside, enabled?)` | — (no return value) | attaches a document `mousedown` listener while `enabled`, calls `onClickOutside()` when the event target is outside `ref.current`. The callback is stashed in a `ref` (updated in a `useLayoutEffect`, not during render — React's "no ref writes during render" rule) so the effect's dependency array is just `[ref, enabled]` and doesn't tear down/resubscribe the listener every time the caller passes a new closure. |
+| `useSelect(onChange)` | `{ open, ref, toggle, selectOption }` | open/close state for `<Select>`, built on `useClickOutside(ref, close, open)` |
+
+Reusable beyond `<Select>` — anything that closes on an outside click (a modal, a popover, a
+context menu) is meant to reach for `useClickOutside` rather than re‑implement the listener.
+
 `<ProtectedRoute>` (the frontend's "guard") and route wiring are in [routing.md](./routing.md).

@@ -87,18 +87,36 @@ src/
     useFormSubmit.ts           shared { error, pending, run(action) } for async form submits
     useLogin.ts                login form state + submit -> authApi.login -> refetch + navigate
     useRegister.ts             register form state + submit -> authApi.register -> navigate
+    useSelect.ts               open/close + selection state for <Select> (built on useClickOutside)
+    useClickOutside.ts         generic "call this when a mousedown lands outside `ref`" hook
 
   pages/                       PRESENTATION (markup; all logic comes from a hook)
     Login.tsx                  "/"           <- useLogin()
     Register.tsx               "/register"   <- useRegister()
-    Dashboard.tsx              "/dashboard"  protected; shows user + logout
+    Dashboard.tsx              "/dashboard"  protected; admin shell — see the dashboard tree below
 
   components/
     ProtectedRoute.tsx         gate: loading -> spinner, guest -> <Navigate to="/">, authed -> <Outlet/>
+
+    // auth pages
     AuthLayout.tsx             page shell: <AuthPanel> + <AuthIllustration> in a 2-col grid
     AuthPanel.tsx  AuthHeading.tsx  AuthIllustration.tsx
     Input.tsx  Checkbox.tsx  SubmitButton.tsx  SliderDots.tsx  Doughnut.tsx
-    icons/ Envelope.tsx Person.tsx ShieldSlash.tsx
+
+    // dashboard / admin shell
+    Navigation.tsx             fixed sidebar: brand, nav links, user + sign out
+    Title.tsx                  page heading (title + description) with an action slot
+    Button.tsx                 generic icon + label button (admin theme, not the auth SubmitButton)
+    CountCard.tsx  UserCountCards.tsx     the 4 stat cards (total/active/inactive/suspended)
+    Search.tsx                 controlled search input with a magnifying-glass icon
+    Select.tsx                 controlled dropdown (options/value/onChange), checkmarks the active one
+    UserFilters.tsx            composes <Search> + two <Select> into the toolbar row
+
+    icons/                     one file per icon, all `(props: SVGProps<SVGSVGElement>) => <svg .../>`
+      Envelope.tsx  Person.tsx  ShieldSlash.tsx                     — auth forms
+      Users.tsx  Activity.tsx  Gear.tsx  ChartBar.tsx  SignOut.tsx  — sidebar nav
+      Plus.tsx  MagnifyingGlass.tsx  CaretDown.tsx  Check.tsx       — buttons / search / select
+      UserCheck.tsx  UserX.tsx  Warning.tsx                         — stat cards
 
   styles/                      see styling.md
   assets/                      images imported by JS
@@ -117,3 +135,26 @@ public/                        served as-is at "/" — favicon.svg, *.svg illust
 │   └── footer
 └── <AuthIllustration>               <aside>: <img> + <Doughnut> + title/subtitle + <SliderDots>
 ```
+
+### Component tree (dashboard / admin shell)
+
+```
+<Navigation>                         position: fixed sidebar, $sidebar-width wide
+├── header: brand + collapse button (button is currently non-functional, see todo.md)
+├── <NavLink> × 4                    /dashboard, /activity, /settings, /analytics
+└── footer: {username} + role + <SignOut> "Sign Out"
+
+<main class="global_layout">         margin-left: $sidebar-width, offsets the fixed sidebar
+├── <Title>                          "User Management" + description
+│   └── {children}                   <Button icon={<Plus/>}>Add User</Button>
+├── <UserCountCards>
+│   └── <CountCard> × 4              total / active / inactive / suspended
+└── <UserFilters>
+    ├── <Search>                     name/email text filter
+    ├── <Select>                     role filter
+    └── <Select>                     status filter
+```
+
+`Dashboard.tsx` renders `<Navigation/>` and `<main class="global_layout">` as siblings, **not** nested in a
+wrapper `<div>` — see [routing.md](./routing.md#dashboardtsx). `/activity`, `/settings`, and `/analytics`
+are linked from the sidebar but have no matching `<Route>` yet (see [todo.md](./todo.md)).

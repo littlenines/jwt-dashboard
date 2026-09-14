@@ -85,8 +85,37 @@ Each page is markup only — all state and behaviour come from a hook in `src/ho
 > ([backend/auth.md](../backend/auth.md#authvalidatets--request-body-schemas)).
 
 ### `Dashboard.tsx`
-- Reads `useAuth()` — `<ProtectedRoute>` guarantees `status === "authed"`, so `auth.user` is available.
-- Shows `Welcome, {username}` + a **Log out** button → `authApi.logout()` → `auth.clear()` (local, no request) → `navigate("/")`.
+No hook of its own — it's the admin shell, composed straight from components:
+
+```tsx
+const Dashboard = () => (
+  <>
+    <Navigation />
+    <main className="global_layout">
+      <Title title="User Management" description="…">
+        <Button icon={<Plus />}>Add User</Button>
+      </Title>
+      <UserCountCards />
+      <UserFilters />
+    </main>
+  </>
+);
+```
+
+- `<Navigation>` and `<main>` are **siblings in a fragment, not nested in a wrapper `<div>`** —
+  `<Navigation>` is `position: fixed`, and `<main class="global_layout">` clears it with a
+  matching `margin-left`, so no shared flex/grid parent is needed. Details in
+  [styling.md](./styling.md#the-fixed-sidebar--margin-left-pattern).
+- `<Navigation>` itself reads `useAuth()` for the footer username/sign-out — `<ProtectedRoute>`
+  guarantees `status === "authed"` here, so `auth.user` is available. Sign-out is the same
+  `authApi.logout() → auth.clear() (local, no request) → navigate("/")` sequence the old
+  Dashboard used directly.
+- `<UserCountCards>` and `<UserFilters>` render fixed/placeholder data — there's no user list
+  fetched or filtered yet. See [components.md](./components.md#data-display) and
+  [todo.md](./todo.md).
+- The sidebar links to `/activity`, `/settings`, `/analytics` — **none of those have a `<Route>`
+  below**, so they currently 404 via the client-side router (react-router renders nothing
+  matched, not a real 404 page — see [todo.md](./todo.md)).
 
 ## The auth flow, end to end
 
