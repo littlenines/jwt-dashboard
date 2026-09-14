@@ -1,0 +1,28 @@
+@use "../abstracts" as *;
+
+.search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    padding: 10px 14px;
+    background-color: $color-surface-muted;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+
+    svg {
+        flex-shrink: 0;
+        color: $color-text-subtle;
+    }
+
+    input {
+        all: unset;
+        width: 100%;
+        font-size: $font-size-sm;
+        color: $color-text-dark;
+
+        &::placeholder {
+            color: $color-text-subtle;
+        }
+    }
+}

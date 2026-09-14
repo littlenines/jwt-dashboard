@@ -1,0 +1,66 @@
+@use "../abstracts" as *;
+
+.select {
+    position: relative;
+}
+
+.select_trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    font-size: $font-size-sm;
+    font-family: inherit;
+    font-weight: $font-weight-medium;
+    color: $color-text-dark;
+    background-color: $color-white;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    white-space: nowrap;
+
+    svg {
+        flex-shrink: 0;
+        color: $color-text-subtle;
+    }
+}
+
+.select_menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 10;
+    min-width: 160px;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    background-color: $color-white;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    box-shadow: $shadow-dropdown;
+}
+
+.select_option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 10px;
+    font-size: $font-size-sm;
+    font-family: inherit;
+    color: $color-text-dark;
+    text-align: left;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+
+    &:hover {
+        background-color: $color-hover;
+    }
+
+    svg {
+        flex-shrink: 0;
+    }
+}
