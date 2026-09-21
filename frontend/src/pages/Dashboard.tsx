@@ -4,6 +4,7 @@ import Button from "@/components/Button";
 import Plus from "@/components/icons/Plus";
 import UserCountCards from "@/components/UserCountCards";
 import UserFilters from "@/components/UserFilters";
+import UserTable from "@/components/UserTable";
 
 const Dashboard = () => {
 
@@ -18,6 +19,8 @@ const Dashboard = () => {
         <UserCountCards />
 
         <UserFilters />
+
+        <UserTable />
       </main>
     </>
   );

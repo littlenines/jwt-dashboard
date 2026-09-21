@@ -1,0 +1,24 @@
+@use "../abstracts" as *;
+
+.user_table {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+}
+
+.user_table_info {
+    line-height: 2.5;
+
+    h4 {
+        font-size: $font-size-base;
+        font-weight: $font-weight-semibold;
+    }
+
+    p {
+        color: $color-text-secondary;
+        font-size: $font-size-sm;
+    }
+}

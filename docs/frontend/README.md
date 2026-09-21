@@ -108,9 +108,11 @@ src/
     Title.tsx                  page heading (title + description) with an action slot
     Button.tsx                 generic icon + label button (admin theme, not the auth SubmitButton)
     CountCard.tsx  UserCountCards.tsx     the 4 stat cards (total/active/inactive/suspended)
+    Table.tsx                  generic, reusable <table> — columns + data + getRowKey, no card/title of its own
+    UserTable.tsx              the "Users" card wrapping <Table>: row type, mock data, columns
     Search.tsx                 controlled search input with a magnifying-glass icon
     Select.tsx                 controlled dropdown (options/value/onChange), checkmarks the active one
-    UserFilters.tsx            composes <Search> + two <Select> into the toolbar row
+    UserFilters.tsx            composes <Search> + two <Select> into the toolbar row (not wired to <UserTable>)
 
     icons/                     one file per icon, all `(props: SVGProps<SVGSVGElement>) => <svg .../>`
       Envelope.tsx  Person.tsx  ShieldSlash.tsx                     — auth forms
@@ -149,11 +151,16 @@ public/                        served as-is at "/" — favicon.svg, *.svg illust
 │   └── {children}                   <Button icon={<Plus/>}>Add User</Button>
 ├── <UserCountCards>
 │   └── <CountCard> × 4              total / active / inactive / suspended
-└── <UserFilters>
-    ├── <Search>                     name/email text filter
-    ├── <Select>                     role filter
-    └── <Select>                     status filter
+├── <UserFilters>
+│   ├── <Search>                     name/email text filter
+│   ├── <Select>                     role filter
+│   └── <Select>                     status filter
+└── <UserTable>                      card: "Users (N)" + description
+    └── <Table>                      generic — columns + mock `users` data
 ```
+
+`<UserFilters>` and `<UserTable>` are independent siblings — nothing in the former filters the
+latter yet (see [todo.md](./todo.md)).
 
 `Dashboard.tsx` renders `<Navigation/>` and `<main class="global_layout">` as siblings, **not** nested in a
 wrapper `<div>` — see [routing.md](./routing.md#dashboardtsx). `/activity`, `/settings`, and `/analytics`

@@ -96,6 +96,28 @@ No props. Renders the fixed set of four `<CountCard>`s (total/`<Users>`, active/
 inactive/`<UserX>`, suspended/`<Warning>`) with **hardcoded counts** (`8, 1, 1, 1`) — not wired to
 any data source yet.
 
+### `Table` — `Table.tsx`
+```tsx
+type TableColumn<T> = { key: string; header: string; render: (row: T) => ReactNode };
+type TableProps<T> = { columns: TableColumn<T>[]; data: T[]; getRowKey: (row: T) => string | number; emptyMessage?: string };
+```
+Generic, reusable `<table>` — no title, no card, no border of its own (that's deliberately left to
+the caller; see `UserTable` below). `<thead>`/`<tbody>` built from `columns`; each cell is
+whatever `column.render(row)` returns, so the caller decides formatting per column (e.g. a
+currency string) instead of `Table` guessing at a cell type. Renders one `emptyMessage` row
+(default `"No data yet."`) spanning all columns when `data` is empty. Styling is intentionally
+minimal — just `th { font-weight: 500 }` — matching what the table actually had before it was
+split out; it isn't a place to add borders/padding/hover opinions that weren't there originally.
+
+### `UserTable` — `UserTable.tsx`
+No props. The "Users" instance of `Table`: defines the `User` row type, a hardcoded `users` array
+(two identical "John Doe" rows — placeholder data), the 7 columns (User/Role/Status/Orders/Total
+Spent/Created/Last Login), and wraps `<Table>` in its own card (`<section class="user_table">` +
+a `<div class="user_table_info">` heading) — the card/heading styling that used to live directly
+in this file's SCSS before `Table` was extracted stayed here rather than moving to `Table`.
+**Not connected to `<UserFilters>`** — the search/role/status state there doesn't filter this
+table's rows (see [todo.md](./todo.md)).
+
 ## Filters
 
 ### `Search` — `Search.tsx`
@@ -124,9 +146,10 @@ State comes from `useSelect(onChange)` ([layers.md](./layers.md#ui-hooks-not-pag
 ### `UserFilters` — `UserFilters.tsx`
 No props. Holds its own `search` / `role` / `status` state and renders `<Search>` + two
 `<Select>`s in a bordered toolbar row (same card look as `CountCard`, via `$radius-lg` /
-`$color-border`). **Nothing consumes this state yet** — there's no user list/table in
-`Dashboard.tsx` to filter, and the `role` options (`Admin`/`Manager`/`Staff`) are placeholders,
-not real data. See [todo.md](./todo.md).
+`$color-border`). **Nothing consumes this state yet** — `Dashboard.tsx` renders `<UserFilters>`
+and `<UserTable>` as independent siblings, so typing in the search box or changing a dropdown
+doesn't touch the table's rows. The `role` options (`Admin`/`Manager`/`Staff`) are placeholders,
+not real data, too. See [todo.md](./todo.md).
 
 ## Form controls
 

@@ -56,9 +56,15 @@
 - `Navigation` hardcodes "Admin Panel" / "Shop Management" (header) and "Super Admin" (footer
   role) — only the username comes from `useAuth()`.
 - `UserCountCards` has hardcoded counts (`8, 1, 1, 1`), and `UserFilters`' `role` options
-  (`Admin`/`Manager`/`Staff`) are placeholders — neither is backed by a real endpoint yet. There's
-  also no user list/table in `Dashboard.tsx` for `UserFilters`' search/role/status state to
-  actually filter.
+  (`Admin`/`Manager`/`Staff`) are placeholders — neither is backed by a real endpoint yet.
+- **`UserFilters` and `UserTable` aren't connected.** `Dashboard.tsx` renders both, but they're
+  independent siblings with their own local state/data — typing in `<Search>` or changing a
+  `<Select>` does nothing to the table's rows. Needs either lifting `{search, role, status}` up
+  to `Dashboard` and filtering the `users` array passed to `UserTable`, or a shared data-fetching
+  hook both read from.
+- `UserTable`'s `users` array is two hardcoded, identical "John Doe" rows — not from any endpoint.
+  When a real `/users` list exists, only `UserTable.tsx` needs to change; `Table` itself is
+  already generic.
 - `CountCard`'s `title` prop is typed as a bare `string`, but its color only resolves for exactly
   `'total' | 'active' | 'inactive' | 'suspended'` (via `styles[title]` — see
   [styling.md](./styling.md#dynamic-class-lookup-stylessomevariable)). Narrow the type so a typo
