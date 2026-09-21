@@ -20,6 +20,7 @@ export const createUser = (data: {
     omit: {
       password: true,
       accept: true,
+      role: true,
       updatedAt: true,
     },
   });
