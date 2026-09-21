@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router";
 import { AuthProvider } from "./context/auth/AuthProvider.tsx";
-// import ProtectedRoute from "./components/ProtectedRoute.tsx";
+import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
@@ -18,9 +18,9 @@ createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
-          {/* <Route element={<ProtectedRoute />}>
-          </Route> */}
+          </Route>
         </Routes>
       </BrowserRouter>
     </AuthProvider>
