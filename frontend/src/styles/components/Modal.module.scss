@@ -1,0 +1,53 @@
+@use "../abstracts" as *;
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: $z-modal;
+    padding: 24px;
+}
+
+.modal {
+    width: 100%;
+    max-width: 480px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    background-color: $color-white;
+    border-radius: $radius-lg;
+    padding: 24px;
+}
+
+.modal_header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.modal_title {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+}
+
+.modal_description {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    margin-top: 4px;
+}
+
+.modal_close {
+    all: unset;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: $color-text-subtle;
+    cursor: pointer;
+
+    &:hover {
+        color: $color-text-dark;
+    }
+}

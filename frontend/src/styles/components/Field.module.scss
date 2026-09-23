@@ -1,0 +1,53 @@
+@use "../abstracts" as *;
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label {
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        color: $color-text-dark;
+    }
+
+    input {
+        all: unset;
+        box-sizing: border-box;
+        width: 100%;
+        padding: 10px 14px;
+        font-size: $font-size-sm;
+        color: $color-text-dark;
+        background-color: $color-surface-muted;
+        border: 1px solid $color-border;
+        border-radius: $radius-sm;
+
+        &::placeholder {
+            color: $color-text-subtle;
+        }
+    }
+}
+
+.field_input {
+    position: relative;
+}
+
+.field_toggle {
+    all: unset;
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    color: $color-text-subtle;
+    cursor: pointer;
+
+    &:hover {
+        color: $color-text-dark;
+    }
+}
+
+.field_input:has(.field_toggle) input {
+    padding-right: 40px;
+}

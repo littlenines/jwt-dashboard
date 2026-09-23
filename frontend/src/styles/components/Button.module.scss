@@ -11,9 +11,9 @@
     color: $color-white;
     background-color: $color-text-dark;
     border: none;
-    border-radius: 8px;
+    border-radius: $radius-sm;
     cursor: pointer;
-    transition: opacity 0.15s ease;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
 
     svg {
         flex-shrink: 0;
@@ -26,5 +26,17 @@
     &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+    }
+}
+
+.secondary {
+    color: $color-text-dark;
+    font-weight: $font-weight-medium;
+    background-color: $color-white;
+    border: 1px solid $color-border;
+
+    &:hover {
+        opacity: 1;
+        background-color: $color-hover;
     }
 }

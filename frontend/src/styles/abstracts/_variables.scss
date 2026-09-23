@@ -46,6 +46,12 @@ $radius-lg: 12px;
 
 $shadow-dropdown: 0 8px 24px rgba(0, 0, 0, 0.08);
 
+// Both render through <Portal> into document.body, so they stack as siblings
+// there (not nested) — the dropdown must sit above the modal to stay visible
+// when a <Select> is used inside one (e.g. AddUserModal).
+$z-modal: 999;
+$z-dropdown: 1000;
+
 $sidebar-width: 255px;
 
 $color-doughnut-light: #a4bcfd;
