@@ -18,6 +18,7 @@ model User {
   username      String         @unique
   password      String
   role          String         @default("staff")
+  status        String         @default("active")
   accept        Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

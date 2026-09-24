@@ -21,6 +21,7 @@ export const createUser = (data: {
       password: true,
       accept: true,
       role: true,
+      status: true,
       updatedAt: true,
     },
   });
