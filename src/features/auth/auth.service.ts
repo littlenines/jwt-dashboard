@@ -14,6 +14,7 @@ import {
   deleteRefreshTokenById,
   deleteRefreshTokenByHash,
   rotateRefreshToken,
+  touchLastLogin,
 } from "./auth.repository";
 import { type IssuedTokens, type RegisterConflict } from "./auth.types";
 
@@ -28,12 +29,15 @@ export const loginService = async (
 
   const { accessToken, refreshToken, refreshTokenMaxAge, expiresAt } = await issueTokens(user.id, remember);
 
-  await createRefreshToken({
-    hashedToken: hashToken(refreshToken),
-    userId: user.id,
-    remember,
-    expiresAt,
-  });
+  await Promise.all([
+    createRefreshToken({
+      hashedToken: hashToken(refreshToken),
+      userId: user.id,
+      remember,
+      expiresAt,
+    }),
+    touchLastLogin(user.id),
+  ]);
 
   return { accessToken, refreshToken, remember, refreshTokenMaxAge };
 };

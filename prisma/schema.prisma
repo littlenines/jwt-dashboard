@@ -22,6 +22,7 @@ model User {
   accept        Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  lastLoginAt   DateTime?
   refreshTokens RefreshToken[]
 }
 

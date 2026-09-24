@@ -22,6 +22,7 @@ export const createUser = (data: {
       accept: true,
       role: true,
       status: true,
+      lastLoginAt: true,
       updatedAt: true,
     },
   });
@@ -57,3 +58,5 @@ export const rotateRefreshToken = (params: {
       },
     }),
   ]);
+
+export const touchLastLogin = (id: string) => prisma.user.update({ where: { id }, data: { lastLoginAt: new Date() } });
