@@ -1,21 +1,10 @@
 import { useState } from "react";
-import { getErrorMessage } from "@/lib/apiError";
 
+// Shared error/pending state for a form submit. Each hook (useLogin,
+// useRegister, useAddUser, …) drives it with its own try/catch.
 export const useFormSubmit = () => {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const run = async (action: () => Promise<void>) => {
-    setError(null);
-    setPending(true);
-    try {
-      await action();
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setPending(false);
-    }
-  };
-
-  return { error, pending, run };
+  return { error, setError, pending, setPending };
 };

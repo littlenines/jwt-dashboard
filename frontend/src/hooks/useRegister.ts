@@ -1,6 +1,7 @@
 import { useState, type SubmitEvent } from "react";
 import { useNavigate } from "react-router";
 import { authApi } from "@/api/auth";
+import { getErrorMessage } from "@/lib/apiError";
 import { useFormSubmit } from "./useFormSubmit";
 
 const initialValues = {
@@ -13,19 +14,26 @@ const initialValues = {
 
 export const useRegister = () => {
   const [values, setValues] = useState(initialValues);
-  const { error, pending, run } = useFormSubmit();
+  const { error, setError, pending, setPending } = useFormSubmit();
 
   const navigate = useNavigate();
 
   const setField = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) =>
     setValues((current) => ({ ...current, [key]: value }));
 
-  const submit = (event: SubmitEvent<HTMLFormElement>) => {
+  const submit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    void run(async () => {
+    setError(null);
+    setPending(true);
+
+    try {
       await authApi.register(values);
-      navigate("/");
-    });
+      navigate("/"); // register does not log you in — go to the login screen
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setPending(false);
+    }
   };
 
   return { values, setField, error, pending, submit };

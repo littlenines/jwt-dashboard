@@ -1,8 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "#lib/tokenPolicy";
 
-// Read the secrets lazily. Module-load-time `process.env` access is fragile:
-// in ESM this file may be evaluated before .env is loaded.
 const encoder = new TextEncoder();
 const accessSecret = () => encoder.encode(process.env.JWT_SECRET);
 const refreshSecret = () => encoder.encode(process.env.JWT_REFRESH);

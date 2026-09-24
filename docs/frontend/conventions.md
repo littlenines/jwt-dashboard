@@ -8,22 +8,33 @@
 export default defineConfig({
   plugins: [react()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-  server: { proxy: { '/auth': 'http://localhost:3000' } },
+  server: {
+    proxy: {
+      '/auth': 'http://localhost:3000',
+      '/user': 'http://localhost:3000',
+    },
+  },
 });
 ```
 
 ### The dev proxy — why it matters
 
-In dev, the browser only ever talks to the Vite origin (`http://localhost:5173`). Any request
-to `/auth/*` is **proxied** by Vite to the backend on `:3000`.
+In dev, the browser only ever talks to the Vite origin (`http://localhost:5173`). A request to
+a **listed** prefix is **proxied** by Vite to the backend on `:3000`; anything else is handled
+by Vite itself.
 
 Consequences:
 - **Same‑origin from the browser's view** → no CORS config needed, and `Set-Cookie` /
   `withCredentials` "just work" (cross‑origin cookies would need `SameSite=None; Secure` + CORS
   `credentials`).
-- The frontend calls **relative** URLs (`/auth/login`), never `http://localhost:3000/...`.
+- The frontend calls **relative** URLs (`/auth/login`, `/user/add`), never `http://localhost:3000/...`.
 - In production you deploy frontend + backend behind one origin (or add a real reverse proxy);
   the app code doesn't change.
+- **Every backend route prefix needs its own entry here**, or it silently 404s in dev (Vite
+  returns its own 404, not the backend's — this is why `/user/add` looked like a generic
+  "Something went wrong" instead of a real API error). `vite.config.ts` isn't hot‑reloaded —
+  restart `pnpm dev` after changing it. If prefixes keep multiplying, consider mounting all
+  backend routes under one shared prefix (e.g. `/api/*`) so there's only ever one proxy entry.
 
 ### `@` alias
 

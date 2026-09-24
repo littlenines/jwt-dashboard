@@ -1,18 +1,21 @@
 import { useState, type SubmitEvent } from "react";
-import { useNavigate } from "react-router";
-import { authApi } from "@/api/auth";
+import { userApi } from "@/api/user";
 import { getErrorMessage } from "@/lib/apiError";
-import { useAuth } from "@/context/auth/useAuth";
 import { useFormSubmit } from "./useFormSubmit";
+import type { AddUserInput } from "@/types/user";
 
-const initialValues = { email: "", password: "", remember: false };
+const initialValues: AddUserInput = {
+  username: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  role: "staff",
+  status: "active",
+};
 
-export const useLogin = () => {
+export const useAddUser = (onSuccess: () => void) => {
   const [values, setValues] = useState(initialValues);
   const { error, setError, pending, setPending } = useFormSubmit();
-
-  const navigate = useNavigate();
-  const { refetch } = useAuth();
 
   const setField = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) =>
     setValues((current) => ({ ...current, [key]: value }));
@@ -23,9 +26,8 @@ export const useLogin = () => {
     setPending(true);
 
     try {
-      await authApi.login(values);
-      refetch(); // update the session so <ProtectedRoute> lets us through
-      navigate("/dashboard");
+      await userApi.add(values);
+      onSuccess();
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

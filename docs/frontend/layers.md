@@ -155,9 +155,29 @@ returns. The hook is what talks to the state (`useAuth`) and data (`authApi`) la
 
 | Hook | Returns | Does |
 |------|---------|------|
-| `useFormSubmit()` | `{ error, pending, run }` | `run(action)` wraps an async action in `setError(null) / setPending(true) / try‑catch(getErrorMessage) / finally setPending(false)` |
+| `useFormSubmit()` | `{ error, setError, pending, setPending }` | just the shared `error`/`pending` state — each caller drives it with its own `try/catch/finally` |
 | `useLogin()` | `{ values, setField, error, pending, submit }` | form state + `submit` → `authApi.login` → `refetch()` → `navigate("/dashboard")` |
 | `useRegister()` | `{ values, setField, error, pending, submit }` | form state + `submit` → `authApi.register` → `navigate("/")` |
+| `useAddUser(onSuccess)` | `{ values, setField, error, pending, submit }` | form state + `submit` → `userApi.add` → `onSuccess()` |
+
+```tsx
+// useLogin.ts — the submit function
+const submit = async (event: SubmitEvent<HTMLFormElement>) => {
+  event.preventDefault();
+  setError(null);
+  setPending(true);
+
+  try {
+    await authApi.login(values);
+    refetch();
+    navigate("/dashboard");
+  } catch (err) {
+    setError(getErrorMessage(err));
+  } finally {
+    setPending(false);
+  }
+};
+```
 
 ```tsx
 // Login.tsx — the whole component
@@ -175,12 +195,14 @@ const Login = () => {
 ```
 
 `setField` is a typed single‑field updater: `<K extends keyof Values>(key: K, value: Values[K])`.
+The `try/catch/finally` shape is duplicated across the three hooks rather than hidden behind a
+callback-taking wrapper — the state (`useFormSubmit`) is shared, the control flow isn't.
 
 ### UI hooks (not page hooks)
 
-`useFormSubmit` / `useLogin` / `useRegister` above all belong to a *page* (form state + a submit
-flow through the data/state layers). Two more hooks in `src/hooks/` are a different thing
-entirely — generic component *behavior*, with no knowledge of auth, data, or state:
+`useFormSubmit` / `useLogin` / `useRegister` / `useAddUser` above all belong to a *page* (form
+state + a submit flow through the data/state layers). Two more hooks in `src/hooks/` are a
+different thing entirely — generic component *behavior*, with no knowledge of auth, data, or state:
 
 | Hook | Returns | Does |
 |------|---------|------|
