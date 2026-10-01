@@ -1,5 +1,5 @@
 import { type Request, type Response } from "express";
-import { addUserService } from "./user.service";
+import { addUserService, getUserStatusesService } from "./user.service";
 
 export const addUserController = async (req: Request, res: Response) => {
   const { email, username, password, role, status } = req.body;
@@ -14,3 +14,9 @@ export const addUserController = async (req: Request, res: Response) => {
 
   return res.status(201).json({ user: result });
 };
+
+export const statusUserController = async (req: Request, res: Response) => {
+  const result = await getUserStatusesService();
+
+  return res.status(200).json(result)
+}

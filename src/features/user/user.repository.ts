@@ -20,3 +20,7 @@ export const addUser = (data: {
       updatedAt: true,
     },
   });
+
+export const countUsers = () => prisma.user.count();
+
+export const findUserStatuses = () => prisma.user.groupBy({ by: ["status"], _count: { _all: true } });
