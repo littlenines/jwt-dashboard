@@ -1,5 +1,7 @@
 import { type Request, type Response } from "express";
-import { addUserService, getUserStatusesService } from "./user.service";
+import { type z } from "zod";
+import { addUserService, getUserStatusesService, getUsersPaginationService } from "./user.service";
+import { type paginationSchema } from "./user.validate";
 
 export const addUserController = async (req: Request, res: Response) => {
   const { email, username, password, role, status } = req.body;
@@ -19,4 +21,12 @@ export const statusUserController = async (req: Request, res: Response) => {
   const result = await getUserStatusesService();
 
   return res.status(200).json(result)
+}
+
+export const paginationUserController = async (req: Request, res: Response) => {
+  const { page, pageSize } = req.validatedQuery as z.infer<typeof paginationSchema>;
+
+  const paginationResult = await getUsersPaginationService(page, pageSize);
+
+  return res.status(200).json(paginationResult);
 }

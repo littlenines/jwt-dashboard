@@ -12,3 +12,8 @@ export const addUserSchema = z.object({
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });
+
+export const paginationSchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  pageSize: z.coerce.number().min(10).max(50).default(10)
+})

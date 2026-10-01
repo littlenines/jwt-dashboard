@@ -1,7 +1,7 @@
 import argon2 from "argon2";
 import { Prisma } from "#generated/prisma/client";
-import { type AddUserConflict, type UserStatusCounts } from "./user.types";
-import { findUserIdByEmail, findUserIdByUsername, addUser, countUsers, findUserStatuses } from "./user.repository";
+import { type AddUserConflict, type UserStatusCounts, type PaginatedUsers } from "./user.types";
+import { findUserIdByEmail, findUserIdByUsername, addUser, countUsers, findUserStatuses, getUsersByPagination } from "./user.repository";
 
 export const addUserService = async (email: string, username: string, password: string, role: string, status: string) => {
   const [emailTaken, usernameTaken] = await Promise.all([ findUserIdByEmail(email), findUserIdByUsername(username) ]);
@@ -39,3 +39,9 @@ export const getUserStatusesService = async () => {
 
   return counts;
 };
+
+export const getUsersPaginationService = async (page: number, pageSize: number): Promise<PaginatedUsers> => {
+  const [total, users] = await Promise.all([countUsers(), getUsersByPagination(page, pageSize)]);
+
+  return {total, users}
+}
