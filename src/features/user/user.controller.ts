@@ -20,8 +20,8 @@ export const addUserController = async (req: Request, res: Response) => {
 export const statusUserController = async (req: Request, res: Response) => {
   const result = await getUserStatusesService();
 
-  return res.status(200).json(result)
-}
+  return res.status(200).json(result);
+};
 
 export const paginationUserController = async (req: Request, res: Response) => {
   const { page, pageSize } = req.validatedQuery as z.infer<typeof paginationSchema>;
@@ -29,4 +29,4 @@ export const paginationUserController = async (req: Request, res: Response) => {
   const paginationResult = await getUsersPaginationService(page, pageSize);
 
   return res.status(200).json(paginationResult);
-}
+};

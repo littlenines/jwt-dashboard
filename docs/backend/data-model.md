@@ -10,9 +10,12 @@
 | `email`       | `String`   | `@unique`                    | login identifier, stored lowercased/trimmed |
 | `username`    | `String`   | `@unique`                    | public handle |
 | `password`    | `String`   | —                            | **argon2 hash**, never the plaintext |
+| `role`        | `String`   | `@default("staff")`          | `"staff" \| "admin" \| "manager"` — **not** a Prisma enum, just a plain string column; the allow‑list is enforced by zod (`addUserSchema`) at the API boundary, not by the DB |
+| `status`      | `String`   | `@default("active")`         | `"active" \| "inactive" \| "suspended"` — same caveat as `role` |
 | `accept`      | `Boolean`  | `@default(false)`            | accepted terms & conditions at signup |
 | `createdAt`   | `DateTime` | `@default(now())`            | |
-| `updatedAt`   | `DateTime` | `@updatedAt`                 | auto‑maintained |
+| `updatedAt`   | `DateTime` | `@updatedAt`                 | auto‑maintained — bumped by **any** update to the row (role/status edits, `lastLoginAt` touches, …), not specifically logins; see `lastLoginAt` below |
+| `lastLoginAt` | `DateTime?`| nullable, no default         | set explicitly by `loginService` on every successful login — `updatedAt` is **not** a reliable proxy for this |
 | `refreshTokens`| `RefreshToken[]` | relation               | all active/known refresh tokens for this user |
 
 ## `RefreshToken`

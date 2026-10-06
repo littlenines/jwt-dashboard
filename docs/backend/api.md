@@ -41,7 +41,7 @@ No body. Requires a valid `accessToken` cookie (`requireAuth`). Used by the clie
 "am I logged in" and hydrate the session.
 | Status | When | Body |
 |--------|------|------|
-| `200`  | authenticated | `{ "user": { id, email, username, createdAt } }` |
+| `200`  | authenticated | `{ "user": { id, email, username, role, status, lastLoginAt, createdAt } }` |
 | `401`  | no / invalid / expired access token | `{ "message": "Not authenticated" }` |
 
 > A `401` here is normal when the access token has expired — the client's axios interceptor
@@ -52,6 +52,38 @@ No body. Uses the `refreshToken` cookie if present.
 | Status | When | Body / effect |
 |--------|------|---------------|
 | `200`  | always | deletes the DB row, clears both cookies; `{ "message": "Logged out" }` |
+
+---
+
+All endpoints below require a valid `accessToken` cookie (`requireAuth`) — **but not yet any
+specific role**. See [user.md](./user.md) and [todo.md](./todo.md).
+
+## `POST /user/add`
+```jsonc
+{ "email": "a@b.com", "username": "alice", "password": "secret12",
+  "confirmPassword": "secret12", "role": "staff", "status": "active" }
+```
+| Status | When | Body |
+|--------|------|------|
+| `201`  | created | `{ "user": { id, email, username, role, status, createdAt } }` |
+| `400`  | body failed validation | `{ "errors": { field: [msg] } }` |
+| `401`  | not authenticated | `{ "message": "Not authenticated" }` |
+| `409`  | email or username taken | `{ "message": "Email already registered" \| "Username already taken" }` |
+
+## `GET /user/status`
+No body.
+| Status | When | Body |
+|--------|------|------|
+| `200`  | ok | `{ "total": number, "active": number, "inactive": number, "suspended": number }` |
+| `401`  | not authenticated | `{ "message": "Not authenticated" }` |
+
+## `GET /user/list`
+Query params: `?page=1&pageSize=10` (both optional — default `1`/`10`; `pageSize` capped at `50`).
+| Status | When | Body |
+|--------|------|------|
+| `200`  | ok | `{ "total": number, "users": [{ id, username, role, status, createdAt, lastLoginAt }] }` |
+| `400`  | `page`/`pageSize` out of range | `{ "errors": { field: [msg] } }` |
+| `401`  | not authenticated | `{ "message": "Not authenticated" }` |
 
 ---
 

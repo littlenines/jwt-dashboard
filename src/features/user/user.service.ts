@@ -1,7 +1,7 @@
 import argon2 from "argon2";
 import { Prisma } from "#generated/prisma/client";
 import { type AddUserConflict, type UserStatusCounts, type PaginatedUsers } from "./user.types";
-import { findUserIdByEmail, findUserIdByUsername, addUser, countUsers, findUserStatuses, getUsersByPagination } from "./user.repository";
+import { findUserIdByEmail, findUserIdByUsername, addUser, countUsers, countUsersByStatus, getUsersByPagination } from "./user.repository";
 
 export const addUserService = async (email: string, username: string, password: string, role: string, status: string) => {
   const [emailTaken, usernameTaken] = await Promise.all([ findUserIdByEmail(email), findUserIdByUsername(username) ]);
@@ -27,14 +27,14 @@ export const addUserService = async (email: string, username: string, password: 
   }
 };
 
-export const getUserStatusesService = async () => {
-  const [total, byStatus] = await Promise.all([countUsers(), findUserStatuses()]);
+export const getUserStatusesService = async (): Promise<UserStatusCounts> => {
+  const [total, byStatus] = await Promise.all([countUsers(), countUsersByStatus()]);
   const counts: UserStatusCounts = { total, active: 0, inactive: 0, suspended: 0 };
 
   for (const group of byStatus) {
     if (group.status === "active" || group.status === "inactive" || group.status === "suspended") {
       counts[group.status] = group._count._all;
-    };
+    }
   }
 
   return counts;
@@ -43,5 +43,5 @@ export const getUserStatusesService = async () => {
 export const getUsersPaginationService = async (page: number, pageSize: number): Promise<PaginatedUsers> => {
   const [total, users] = await Promise.all([countUsers(), getUsersByPagination(page, pageSize)]);
 
-  return {total, users}
-}
+  return { total, users };
+};

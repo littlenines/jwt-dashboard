@@ -91,8 +91,9 @@ unexpected.** Controllers rely on this to pick 4xx vs 5xx.
 1. `findUserByEmail(email)`.
 2. No user, **or** `argon2.verify(hash, password)` fails → return `null`.
 3. `issueTokens(user.id, remember)` → access + refresh JWT + lifetime.
-4. `createRefreshToken({ hashedToken: hashToken(refreshToken), userId, remember, expiresAt })` —
-   sha256 of the token is stored, never the raw value.
+4. `createRefreshToken(...)` and `touchLastLogin(user.id)` **in parallel** (`Promise.all`) —
+   independent writes: persisting the new refresh token (sha256 of it, never the raw value) and
+   stamping `lastLoginAt` don't depend on each other.
 5. Return `{ accessToken, refreshToken, remember, refreshTokenMaxAge }`.
 
 ### `registerService(email, username, password, accept): Promise<user | RegisterConflict>`
@@ -136,15 +137,16 @@ error interpretation — that's the service's job (see above).
 | Function | Query |
 |----------|-------|
 | `findUserByEmail(email)` | `prisma.user.findUnique({ where: { email } })` |
-| `findUserById(id)` | `prisma.user.findUnique({ where: { id } })` with the response `omit` — for `/auth/me` |
+| `findUserById(id)` | `prisma.user.findUnique({ where: { id } })`, `omit: { password, accept, updatedAt }` — for `/auth/me`. Keeps `role`/`status`/`lastLoginAt` in the response. |
 | `findUserIdByEmail(email)` | same, `select: { id: true }` — for the register conflict check |
 | `findUserIdByUsername(username)` | same, by `username` |
-| `createUser({ email, username, password, accept })` | `prisma.user.create`, with the response `omit` baked in |
+| `createUser({ email, username, password, accept })` | `prisma.user.create`, `omit: { password, accept, role, status, lastLoginAt, updatedAt }` — a self-registered user's response is just `{ id, email, username, createdAt }` |
 | `createRefreshToken({ hashedToken, userId, remember, expiresAt })` | `prisma.refreshToken.create` |
 | `findRefreshTokenByHash(hashedToken)` | `prisma.refreshToken.findUnique` |
 | `deleteRefreshTokenById(id)` | `prisma.refreshToken.delete` |
 | `deleteRefreshTokenByHash(hashedToken)` | `prisma.refreshToken.deleteMany` |
 | `rotateRefreshToken({ oldId, hashedToken, userId, remember, expiresAt })` | `prisma.$transaction([delete, create])` |
+| `touchLastLogin(id)` | `prisma.user.update({ where: { id }, data: { lastLoginAt: new Date() } })` — called from `loginService` only, never on refresh (a refresh isn't a new login) |
 
 Callers pass an already‑hashed token — hashing happens in the service (`hashToken` is a `lib`
 primitive; *deciding* to hash before storing is policy).

@@ -5,7 +5,6 @@ export type User = {
   lastLoginAt?: string;
   role: "staff" | "admin" | "manager";
   status: "active" | "inactive" | "suspended";
-
 };
 
 export type AddUserInput = {
@@ -15,4 +14,11 @@ export type AddUserInput = {
   confirmPassword: string;
   role: "staff" | "admin" | "manager";
   status: "active" | "inactive" | "suspended";
+};
+
+export type UserStatusCounts = {
+  total: number;
+  active: number;
+  inactive: number;
+  suspended: number;
 };

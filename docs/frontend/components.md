@@ -93,8 +93,9 @@ and the count number share that color class.
 
 ### `UserCountCards` — `UserCountCards.tsx`
 No props. Renders the fixed set of four `<CountCard>`s (total/`<Users>`, active/`<UserCheck>`,
-inactive/`<UserX>`, suspended/`<Warning>`) with **hardcoded counts** (`8, 1, 1, 1`) — not wired to
-any data source yet.
+inactive/`<UserX>`, suspended/`<Warning>`), backed by real data — `useUserStatuses()` fetches
+`GET /user/status` on mount. No loading/error UI of its own; a failed fetch is logged and the
+cards just stay at `0` (see [layers.md](./layers.md#4-presentation--srchooks-srcpages-srccomponents)).
 
 ### `Table` — `Table.tsx`
 ```tsx
@@ -140,8 +141,11 @@ can't. Structure:
   is a named `const handleClick` closing over that option, rather than an inline arrow inside the
   `.map`. The active option gets `aria-selected` + a `<Check>` icon.
 
-State comes from `useSelect(onChange)` ([layers.md](./layers.md#ui-hooks-not-page-hooks)); the
-`findSelectedOption` lookup comes from `src/lib/select.ts`.
+State comes from `useSelect(onChange)` ([layers.md](./layers.md#ui-hooks-not-page-hooks)) —
+open/close, a fixed‑position `menuStyle` that flips above the trigger when there's no room
+below, and overlay registration so an open `<Select>` inside `<AddUserModal>`'s `<Modal>`
+doesn't close the modal when you pick an option. The `findSelectedOption` lookup comes from
+`src/lib/select.ts`.
 
 ### `UserFilters` — `UserFilters.tsx`
 No props. Holds its own `search` / `role` / `status` state and renders `<Search>` + two
@@ -150,6 +154,47 @@ No props. Holds its own `search` / `role` / `status` state and renders `<Search>
 and `<UserTable>` as independent siblings, so typing in the search box or changing a dropdown
 doesn't touch the table's rows. The `role` options (`Admin`/`Manager`/`Staff`) are placeholders,
 not real data, too. See [todo.md](./todo.md).
+
+## Modals & overlays
+
+### `Portal` — `Portal.tsx`
+```tsx
+const Portal = ({ children }: { children: ReactNode }) =>
+  createPortal(children, document.body);
+```
+Renders `children` into `document.body` instead of wherever `<Portal>` sits in the component
+tree — the standard way to escape a parent's `overflow`/`z-index`/`position` for an overlay.
+
+### `Modal` — `Modal.tsx`
+```tsx
+type ModalProps = { title: string; description?: string; onClose: () => void; children: ReactNode };
+```
+`<Portal>` → an overlay `<div>` + a centered panel (`ref`‑tracked) with a header
+(title/description + a `<Close>` button) and `{children}`. Closes via `useClickOutside(ref,
+onClose)` (click outside the panel) or `useKeyDown("Escape", onClose)`. Generic — doesn't know
+what's inside it; `AddUserModal` is the one current instance.
+
+### `Field` — `Field.tsx`
+```tsx
+type FieldProps = InputHTMLAttributes<HTMLInputElement> & { label: string };
+```
+A labelled `<input>` — unlike `Input` (the auth-page one), `htmlFor`/`id` are wired correctly
+here via `useId()` (falls back to a passed `id` prop if given). When `type="password"`, renders
+an `<Eye>`/`<EyeOff>` toggle button that flips the actual `type` between `"password"` and
+`"text"` — the one input in the app with a show/hide toggle (see [todo.md](./todo.md) re: the
+auth pages' password fields, which don't have this).
+
+### `AddUserModal` — `AddUserModal.tsx`
+```tsx
+type AddUserModalProps = { onClose: () => void };
+```
+A `<Modal>` instance: form state and submission come entirely from `useAddUser(onClose)` — this
+component is markup only, same pattern as the auth pages. Fields: `Field` × 4 (username, email,
+password, confirm password) + `Select` × 2 (role, status — hardcoded `roleOptions`/`statusOptions`
+matching the backend's `addUserSchema` enums), an `error` `<p role="alert">`, and Cancel/Create
+buttons (both `disabled` while `pending`). On success, `onClose()` (passed down as `onSuccess`)
+unmounts the modal — nothing refreshes `<UserCountCards>` or `<UserTable>` to reflect the new
+user (see [todo.md](./todo.md)).
 
 ## Form controls
 

@@ -11,8 +11,9 @@ decision** in the backend so the codebase can be understood without reading all 
 |-----|--------|
 | [conventions.md](./conventions.md) | TypeScript config, subpath imports, environment variables |
 | [data-model.md](./data-model.md)   | Prisma schema — `User`, `RefreshToken` |
-| [request-flow.md](./request-flow.md) | `app.ts` middleware chain, routing, `validate` / `errorHandler` / `requireAuth` middleware |
+| [request-flow.md](./request-flow.md) | `app.ts` middleware chain, routing, `validate` / `validateQuery` / `errorHandler` / `requireAuth` middleware |
 | [auth.md](./auth.md)               | The `auth` feature file‑by‑file, and how the token model works |
+| [user.md](./user.md)               | The `user` feature — admin user creation, status counts, paginated listing |
 | [lib.md](./lib.md)                 | `src/lib/` shared primitives |
 | [api.md](./api.md)                 | Endpoint reference + the security rationale |
 | [todo.md](./todo.md)              | Known gaps / hardening backlog |
@@ -65,11 +66,12 @@ src/
 
   middleware/
     validate.ts               generic "validate req.body against a zod schema" middleware
+    validateQuery.ts          same, but for req.query -> req.validatedQuery (see user.md)
     requireAuth.ts            verify the access-token cookie; set req.userId or 401
     errorHandler.ts           central Express error handler (last in the chain)
 
   types/
-    express.d.ts              adds req.userId to Express's Request type
+    express.d.ts              adds req.userId / req.validatedQuery to Express's Request type
 
   features/
     auth/                     the auth feature (one folder, one concern)
@@ -81,6 +83,14 @@ src/
       auth.cookies.ts         set / clear the auth cookies (cookie config lives here)
       auth.validate.ts        zod schemas for login / register bodies
       auth.types.ts           shared TypeScript types for the feature
+
+    user/                     admin user management (see user.md)
+      user.route.ts           routes for /user/*
+      user.controller.ts      HTTP layer
+      user.service.ts         business logic (conflict checks, status-count folding)
+      user.repository.ts      every raw Prisma call for this feature
+      user.validate.ts        zod schemas — addUserSchema (body), paginationSchema (query)
+      user.types.ts           shared TypeScript types for the feature
 
 prisma/
   schema.prisma               data model

@@ -23,7 +23,7 @@ export const addUser = (data: {
 
 export const countUsers = () => prisma.user.count();
 
-export const findUserStatuses = () => prisma.user.groupBy({ by: ["status"], _count: { _all: true } });
+export const countUsersByStatus = () => prisma.user.groupBy({ by: ["status"], _count: { _all: true } });
 
 export const getUsersByPagination = (page: number, pageSize: number) =>
   prisma.user.findMany({

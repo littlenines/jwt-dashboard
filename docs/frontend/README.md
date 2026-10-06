@@ -51,7 +51,7 @@ backend's `route → controller → service → repository`.
 | Layer | Job | Backend analogue | Files |
 |-------|-----|------------------|-------|
 | **Network** | *how* to talk to the server — base URL, credentials, the 401→refresh interceptor. No endpoint knowledge. | `lib/prisma` | `src/lib/http.ts` |
-| **Data** | *which* endpoints exist + their request/response shapes. No React. | `*.repository.ts` | `src/api/auth.ts`, `src/types/auth.ts` |
+| **Data** | *which* endpoints exist + their request/response shapes. No React. | `*.repository.ts` | `src/api/{auth,user}.ts`, `src/types/{auth,user}.ts` |
 | **State** | client‑side session — "am I logged in", the current user. | `*.service.ts` | `src/context/auth/` (`authContext.ts`, `AuthProvider.tsx`, `useAuth.ts`) |
 | **Presentation** | components/pages — call data or state, own loading/error/render. | `*.controller.ts` | `src/pages/*`, `src/components/*` |
 
@@ -73,9 +73,11 @@ src/
 
   api/
     auth.ts                    DATA: authApi.login / register / logout / me
+    user.ts                    DATA: userApi.add / list (status counts)
 
   types/
     auth.ts                    wire shapes — User, LoginInput, RegisterInput
+    user.ts                    wire shapes — User (admin shape), AddUserInput, UserStatusCounts
 
   context/
     auth/                      STATE (one folder per context, mirrors backend features/auth/)
@@ -84,11 +86,14 @@ src/
       useAuth.ts               the useAuth() hook
 
   hooks/                       PRESENTATION LOGIC (keeps pages to markup only)
-    useFormSubmit.ts           shared { error, pending, run(action) } for async form submits
+    useFormSubmit.ts           shared { error, setError, pending, setPending } for form submits
     useLogin.ts                login form state + submit -> authApi.login -> refetch + navigate
     useRegister.ts             register form state + submit -> authApi.register -> navigate
-    useSelect.ts               open/close + selection state for <Select> (built on useClickOutside)
-    useClickOutside.ts         generic "call this when a mousedown lands outside `ref`" hook
+    useAddUser.ts              admin "create user" form state + submit -> userApi.add -> onSuccess()
+    useUserStatuses.ts         fetch-on-mount: GET /user/status -> UserStatusCounts for <UserCountCards>
+    useSelect.ts               open/close + fixed-position menu + selection state for <Select>
+    useClickOutside.ts         generic "call this when a mousedown lands outside these ref(s)" hook
+    useKeyDown.ts              generic "call this when a given key is pressed" hook (e.g. Escape)
 
   pages/                       PRESENTATION (markup; all logic comes from a hook)
     Login.tsx                  "/"           <- useLogin()
@@ -107,18 +112,25 @@ src/
     Navigation.tsx             fixed sidebar: brand, nav links, user + sign out
     Title.tsx                  page heading (title + description) with an action slot
     Button.tsx                 generic icon + label button (admin theme, not the auth SubmitButton)
-    CountCard.tsx  UserCountCards.tsx     the 4 stat cards (total/active/inactive/suspended)
+    CountCard.tsx  UserCountCards.tsx     the 4 stat cards <- useUserStatuses() (real data, GET /user/status)
     Table.tsx                  generic, reusable <table> — columns + data + getRowKey, no card/title of its own
     UserTable.tsx              the "Users" card wrapping <Table>: row type, mock data, columns
     Search.tsx                 controlled search input with a magnifying-glass icon
     Select.tsx                 controlled dropdown (options/value/onChange), checkmarks the active one
     UserFilters.tsx            composes <Search> + two <Select> into the toolbar row (not wired to <UserTable>)
 
+    // modal / overlay primitives
+    Portal.tsx                 createPortal(children, document.body) — renders outside the normal DOM tree
+    Modal.tsx                  overlay + centered panel; closes on outside click or Escape
+    Field.tsx                  labelled <input>, with a show/hide toggle when type="password"
+    AddUserModal.tsx           <Modal> instance for "Add User" <- useAddUser()
+
     icons/                     one file per icon, all `(props: SVGProps<SVGSVGElement>) => <svg .../>`
       Envelope.tsx  Person.tsx  ShieldSlash.tsx                     — auth forms
       Users.tsx  Activity.tsx  Gear.tsx  ChartBar.tsx  SignOut.tsx  — sidebar nav
       Plus.tsx  MagnifyingGlass.tsx  CaretDown.tsx  Check.tsx       — buttons / search / select
       UserCheck.tsx  UserX.tsx  Warning.tsx                         — stat cards
+      Close.tsx  Eye.tsx  EyeOff.tsx                                — modal close / password show-hide
 
   styles/                      see styling.md
   assets/                      images imported by JS
@@ -148,19 +160,23 @@ public/                        served as-is at "/" — favicon.svg, *.svg illust
 
 <main class="global_layout">         margin-left: $sidebar-width, offsets the fixed sidebar
 ├── <Title>                          "User Management" + description
-│   └── {children}                   <Button icon={<Plus/>}>Add User</Button>
-├── <UserCountCards>
+│   └── {children}                   <Button icon={<Plus/>} onClick={...}>Add User</Button>
+├── <UserCountCards>                 <- useUserStatuses() (GET /user/status, real data)
 │   └── <CountCard> × 4              total / active / inactive / suspended
 ├── <UserFilters>
 │   ├── <Search>                     name/email text filter
 │   ├── <Select>                     role filter
 │   └── <Select>                     status filter
-└── <UserTable>                      card: "Users (N)" + description
-    └── <Table>                      generic — columns + mock `users` data
+├── <UserTable>                      card: "Users (N)" + description
+│   └── <Table>                      generic — columns + mock `users` data
+└── {isAddUserOpen && <AddUserModal>}  conditional; opened by the Title's "Add User" <Button>
+    └── <Modal> -> <Field> × 4, <Select> × 2  <- useAddUser() (POST /user/add, real data)
 ```
 
 `<UserFilters>` and `<UserTable>` are independent siblings — nothing in the former filters the
-latter yet (see [todo.md](./todo.md)).
+latter yet (see [todo.md](./todo.md)). `isAddUserOpen` is local `useState` in `Dashboard.tsx`;
+closing the modal (Cancel, outside click, Escape, or a successful submit) just unmounts it —
+nothing refreshes `<UserCountCards>` or `<UserTable>` afterward (see [todo.md](./todo.md)).
 
 `Dashboard.tsx` renders `<Navigation/>` and `<main class="global_layout">` as siblings, **not** nested in a
 wrapper `<div>` — see [routing.md](./routing.md#dashboardtsx). `/activity`, `/settings`, and `/analytics`

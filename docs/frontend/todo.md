@@ -55,16 +55,27 @@
   purely decorative right now.
 - `Navigation` hardcodes "Admin Panel" / "Shop Management" (header) and "Super Admin" (footer
   role) — only the username comes from `useAuth()`.
-- `UserCountCards` has hardcoded counts (`8, 1, 1, 1`), and `UserFilters`' `role` options
-  (`Admin`/`Manager`/`Staff`) are placeholders — neither is backed by a real endpoint yet.
+- `UserFilters`' `role` options (`Admin`/`Manager`/`Staff`) are hardcoded placeholders, and
+  nothing reads the filter state yet — see the connection item below. (`UserCountCards` is
+  **done** — it's wired to `GET /user/status` via `useUserStatuses()`.)
 - **`UserFilters` and `UserTable` aren't connected.** `Dashboard.tsx` renders both, but they're
   independent siblings with their own local state/data — typing in `<Search>` or changing a
   `<Select>` does nothing to the table's rows. Needs either lifting `{search, role, status}` up
   to `Dashboard` and filtering the `users` array passed to `UserTable`, or a shared data-fetching
   hook both read from.
-- `UserTable`'s `users` array is two hardcoded, identical "John Doe" rows — not from any endpoint.
-  When a real `/users` list exists, only `UserTable.tsx` needs to change; `Table` itself is
-  already generic.
+- `UserTable`'s `users` array is still two hardcoded, identical "John Doe" rows. **The backend
+  endpoint now exists** — `GET /user/list` (paginated, `?page`/`?pageSize`) — but there's no
+  `userApi` call for it yet (only `userApi.add` and `userApi.list`, which despite its name hits
+  `/user/status`, not `/user/list` — see [layers.md](./layers.md#2-data--srcapiauthts-srcapiuserts)).
+  Wiring this needs: a `userApi.list()` → `/user/list` call (rename the existing misleadingly-named
+  one first), a pagination-aware hook, and `UserTable.tsx` switched from its mock array to that
+  hook's data. `Table` itself is already generic — no change needed there.
+- **`AddUserModal` doesn't refresh anything after creating a user.** `onSuccess` just closes the
+  modal (`onClose`) — `<UserCountCards>` and `<UserTable>` have their own independent
+  `useEffect`‑on‑mount fetches with no shared invalidation, so a newly created user won't appear
+  anywhere until a full page reload. Needs either a shared "refetch users" callback passed down,
+  or a small data-fetching layer with cache invalidation (React Query, etc.) once this app has
+  enough of these cases to justify it.
 - `CountCard`'s `title` prop is typed as a bare `string`, but its color only resolves for exactly
   `'total' | 'active' | 'inactive' | 'suspended'` (via `styles[title]` — see
   [styling.md](./styling.md#dynamic-class-lookup-stylessomevariable)). Narrow the type so a typo

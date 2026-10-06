@@ -85,10 +85,10 @@ user‑facing string. Understands the backend's two error shapes: `{ message }` 
 
 ---
 
-## 2. Data — `src/api/auth.ts`
+## 2. Data — `src/api/auth.ts`, `src/api/user.ts`
 
-The auth endpoints, their shapes, and nothing else. Built on `http`; the only file (besides the
-interceptor) that contains a `/auth/*` string.
+The endpoints, their shapes, and nothing else. Built on `http`; the only files (besides the
+interceptor) that contain a URL string.
 
 ```ts
 export const authApi = {
@@ -97,20 +97,33 @@ export const authApi = {
   logout:   ()                    => http.post<{ message: string }>("/auth/logout").then(r => r.data),
   me:       ()                    => http.get<{ user: User }>("/auth/me").then(r => r.data.user),
 };
+
+export const userApi = {
+  add:  (body: AddUserInput) => http.post<{ user: User }>("/user/add", body).then(r => r.data.user),
+  list: ()                   => http.get<UserStatusCounts>("/user/status").then(r => r.data),
+};
 ```
+
+> `userApi.list` is misleadingly named — it hits `GET /user/status` and returns **status
+> counts**, not a list of users. There's no `userApi` call for the paginated `GET /user/list`
+> endpoint yet (backend-only so far — `UserTable` is still on mock data). See
+> [todo.md](./todo.md).
 
 Errors are left to propagate (axios rejects) — the presentation layer catches and runs them
 through `getErrorMessage`.
 
-### `src/types/auth.ts`
+### `src/types/auth.ts`, `src/types/user.ts`
 
 Wire shapes, mirroring the backend:
 
-| Type | Matches |
-|------|---------|
-| `User` | the `omit`ed user the backend returns (`id, email, username, createdAt`) |
-| `LoginInput` | `loginSchema` |
-| `RegisterInput` | `registerSchema` |
+| Type | File | Matches |
+|------|------|---------|
+| `User` (auth) | `types/auth.ts` | the `omit`ed user `/auth/me` returns (`id, email, username, createdAt`) |
+| `LoginInput` | `types/auth.ts` | `loginSchema` |
+| `RegisterInput` | `types/auth.ts` | `registerSchema` |
+| `User` (admin) | `types/user.ts` | a *different, wider* shape — `id, email, username, role, status, lastLoginAt?` — for the admin-facing `/user/*` endpoints. Same name as `types/auth.ts`'s `User`, different fields; the two are never imported into the same file today, but worth knowing if that changes. |
+| `AddUserInput` | `types/user.ts` | `addUserSchema` |
+| `UserStatusCounts` | `types/user.ts` | the backend's `UserStatusCounts` |
 
 ---
 
@@ -159,6 +172,7 @@ returns. The hook is what talks to the state (`useAuth`) and data (`authApi`) la
 | `useLogin()` | `{ values, setField, error, pending, submit }` | form state + `submit` → `authApi.login` → `refetch()` → `navigate("/dashboard")` |
 | `useRegister()` | `{ values, setField, error, pending, submit }` | form state + `submit` → `authApi.register` → `navigate("/")` |
 | `useAddUser(onSuccess)` | `{ values, setField, error, pending, submit }` | form state + `submit` → `userApi.add` → `onSuccess()` |
+| `useUserStatuses()` | `UserStatusCounts` (no error/pending exposed) | fetch-on-mount — `userApi.list()` (really `/user/status`) → `setStatus`; failures are `console.error`‑only, counts stay at the zeroed default |
 
 ```tsx
 // useLogin.ts — the submit function
@@ -206,10 +220,12 @@ different thing entirely — generic component *behavior*, with no knowledge of 
 
 | Hook | Returns | Does |
 |------|---------|------|
-| `useClickOutside(ref, onClickOutside, enabled?)` | — (no return value) | attaches a document `mousedown` listener while `enabled`, calls `onClickOutside()` when the event target is outside `ref.current`. The callback is stashed in a `ref` (updated in a `useLayoutEffect`, not during render — React's "no ref writes during render" rule) so the effect's dependency array is just `[ref, enabled]` and doesn't tear down/resubscribe the listener every time the caller passes a new closure. |
-| `useSelect(onChange)` | `{ open, ref, toggle, selectOption }` | open/close state for `<Select>`, built on `useClickOutside(ref, close, open)` |
+| `useClickOutside(refs, onClickOutside, enabled?)` | — (no return value) | attaches a document `mousedown` listener while `enabled`, calls `onClickOutside()` when the event target is outside **every** ref in `refs` (a single `RefObject` or an array — e.g. `<Select>` passes both its trigger and its menu, since the menu isn't a DOM child of the trigger). Also exempts clicks inside any currently-registered "active overlay" (see `useActiveOverlay` below), so an open `<Select>` nested inside a `<Modal>` doesn't close the modal when you pick an option. The callback and ref list are stashed in `useRef`s (updated in a `useLayoutEffect`, not during render) so the effect's dependency array is just `[enabled]` and doesn't tear down/resubscribe on every render. |
+| `useActiveOverlay(ref, active)` | — | registers `ref.current` in a module‑level `Set` while `active` is true. `useClickOutside` treats a click landing inside *any* registered overlay as "inside," regardless of which component's `refs` it's checking against — this is what lets a `<Select>` menu live safely inside a `<Modal>`. |
+| `useSelect(onChange)` | `{ open, ref, menuRef, menuStyle, toggle, selectOption }` | open/close state for `<Select>`, built on `useClickOutside([ref, menuRef], close, open)` + `useActiveOverlay(menuRef, open)`. Also computes `menuStyle` (fixed‑position, flips above the trigger if there's not enough room below) via `useLayoutEffect` + scroll/resize listeners — a small floating‑menu positioning system. |
+| `useKeyDown(key, handler, enabled?)` | — | document `keydown` listener for one key (e.g. `"Escape"`), same ref‑stashing pattern as `useClickOutside` so the listener doesn't resubscribe every render. `<Modal>` uses it to close on Escape. |
 
-Reusable beyond `<Select>` — anything that closes on an outside click (a modal, a popover, a
-context menu) is meant to reach for `useClickOutside` rather than re‑implement the listener.
+Reusable beyond `<Select>`/`<Modal>` — anything that closes on an outside click or a key press
+is meant to reach for these rather than re‑implement the listeners.
 
 `<ProtectedRoute>` (the frontend's "guard") and route wiring are in [routing.md](./routing.md).
