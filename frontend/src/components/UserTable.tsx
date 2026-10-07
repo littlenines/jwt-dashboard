@@ -1,40 +1,32 @@
+import { useEffect, useState } from "react";
 import Table, { type TableColumn } from "@/components/Table";
+import { userApi } from "@/api/user";
+import { type PaginatedUsers, type UserListItem } from "@/types/user";
+import { dateFormat } from "@/util/dateFormat";
 import styles from "@/styles/components/UserTable.module.scss";
 
-type User = {
-    id: string;
-    name: string;
-    role: string;
-    status: "Active" | "Inactive" | "Suspended";
-    orders: number;
-    totalSpent: number;
-    createdAt: string;
-    lastLogin: string;
-};
-
-const users: User[] = [
-    { id: "1", name: "John Doe", role: "Super Admin", status: "Active", orders: 0, totalSpent: 0, createdAt: "Jan 15, 2024", lastLogin: "Sep 12, 2024" },
-    { id: "2", name: "John Doe", role: "Super Admin", status: "Active", orders: 0, totalSpent: 0, createdAt: "Jan 15, 2024", lastLogin: "Sep 12, 2024" },
-];
-
-const columns: TableColumn<User>[] = [
-    { key: "user", header: "User", render: (user) => user.name },
+const columns: TableColumn<UserListItem>[] = [
+    { key: "user", header: "User", render: (user) => user.username },
     { key: "role", header: "Role", render: (user) => user.role },
     { key: "status", header: "Status", render: (user) => user.status },
-    { key: "orders", header: "Orders", render: (user) => user.orders },
-    { key: "totalSpent", header: "Total Spent", render: (user) => `$${user.totalSpent.toFixed(2)}` },
-    { key: "createdAt", header: "Created", render: (user) => user.createdAt },
-    { key: "lastLogin", header: "Last Login", render: (user) => user.lastLogin },
+    { key: "createdAt", header: "Created", render: (user) => dateFormat(user.createdAt) },
+    { key: "lastLogin", header: "Last Login", render: (user) => user.lastLoginAt ? dateFormat(user.lastLoginAt) : "—" },
 ];
 
 const UserTable = () => {
+  const [data, setData] = useState<PaginatedUsers>({ total: 0, users: [] });
+
+  useEffect(() => {
+    userApi.pagination(1, 10).then(setData).catch((error) => console.error(error));
+  }, [])
+
     return (
         <section className={styles.user_table}>
             <div className={styles.user_table_info}>
-                <h4>Users ({users.length})</h4>
+                <h4>Users ({data.total})</h4>
                 <p>A list of all users in your shop with their details and actions</p>
             </div>
-            <Table columns={columns} data={users} getRowKey={(user) => user.id} />
+            <Table columns={columns} data={data.users} getRowKey={(user) => user.id} />
         </section>
     )
 }
