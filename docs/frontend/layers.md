@@ -99,14 +99,14 @@ export const authApi = {
 };
 
 export const userApi = {
-  add:  (body: AddUserInput) => http.post<{ user: User }>("/user/add", body).then(r => r.data.user),
-  list: ()                   => http.get<UserStatusCounts>("/user/status").then(r => r.data),
+  add:        (body: AddUserInput)              => http.post<{ user: User }>("/user/add", body).then(r => r.data.user),
+  status:     ()                                => http.get<UserStatusCounts>("/user/status").then(r => r.data),
+  pagination: (page: number, pageSize: number)  => http.get<PaginatedUsers>("/user/pagination", { params: { page, pageSize } }).then(r => r.data),
 };
 ```
 
-> `userApi.list` is misleadingly named — it hits `GET /user/status` and returns **status
-> counts**, not a list of users. There's no `userApi` call for the paginated `GET /user/list`
-> endpoint yet (backend-only so far — `UserTable` is still on mock data). See
+> `userApi.pagination` exists as a data-layer call but nothing consumes it yet — there's no hook
+> (`useUserList`-style) built on top of it, and `UserTable` is still on mock data. See
 > [todo.md](./todo.md).
 
 Errors are left to propagate (axios rejects) — the presentation layer catches and runs them
@@ -124,6 +124,10 @@ Wire shapes, mirroring the backend:
 | `User` (admin) | `types/user.ts` | a *different, wider* shape — `id, email, username, role, status, lastLoginAt?` — for the admin-facing `/user/*` endpoints. Same name as `types/auth.ts`'s `User`, different fields; the two are never imported into the same file today, but worth knowing if that changes. |
 | `AddUserInput` | `types/user.ts` | `addUserSchema` |
 | `UserStatusCounts` | `types/user.ts` | the backend's `UserStatusCounts` |
+| `UserListItem` | `types/user.ts` | one row of the backend's `PaginatedUsers.users` — `id, username, role, status, createdAt, lastLoginAt`. Hand-written, unlike the backend's Prisma-derived version — can drift if the repository's `omit` changes. |
+| `PaginatedUsers` | `types/user.ts` | `{ total: number, users: UserListItem[] }`, matching the backend's `GET /user/pagination` response |
+
+`types/user.ts` also has two unexported, PascalCase union aliases — `Role` (`"staff" \| "admin" \| "manager"`) and `Status` (`"active" \| "inactive" \| "suspended"`) — factored out so `User`, `AddUserInput`, and `UserListItem` don't each repeat the literal union.
 
 ---
 
@@ -172,7 +176,7 @@ returns. The hook is what talks to the state (`useAuth`) and data (`authApi`) la
 | `useLogin()` | `{ values, setField, error, pending, submit }` | form state + `submit` → `authApi.login` → `refetch()` → `navigate("/dashboard")` |
 | `useRegister()` | `{ values, setField, error, pending, submit }` | form state + `submit` → `authApi.register` → `navigate("/")` |
 | `useAddUser(onSuccess)` | `{ values, setField, error, pending, submit }` | form state + `submit` → `userApi.add` → `onSuccess()` |
-| `useUserStatuses()` | `UserStatusCounts` (no error/pending exposed) | fetch-on-mount — `userApi.list()` (really `/user/status`) → `setStatus`; failures are `console.error`‑only, counts stay at the zeroed default |
+| `useUserStatuses()` | `UserStatusCounts` (no error/pending exposed) | fetch-on-mount — `userApi.status()` → `setStatus`; failures are `console.error`‑only, counts stay at the zeroed default |
 
 ```tsx
 // useLogin.ts — the submit function

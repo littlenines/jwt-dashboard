@@ -11,6 +11,6 @@ router.post("/add", [requireAuth, validate(addUserSchema)], addUserController);
 
 router.get("/status", [requireAuth], statusUserController);
 
-router.get("/list", [requireAuth, validateQuery(paginationSchema)], paginationUserController);
+router.get("/pagination", [requireAuth, validateQuery(paginationSchema)], paginationUserController);
 
 export default router;

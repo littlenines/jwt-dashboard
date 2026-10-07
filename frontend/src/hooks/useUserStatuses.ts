@@ -13,7 +13,7 @@ export const useUserStatuses = () => {
   const [status, setStatus] = useState(initialStatus);
 
   useEffect(() => {
-    userApi.list().then(setStatus).catch((error) => console.error(error));
+    userApi.status().then(setStatus).catch((error) => console.error(error));
   }, []);
 
   return status;

@@ -63,13 +63,11 @@
   `<Select>` does nothing to the table's rows. Needs either lifting `{search, role, status}` up
   to `Dashboard` and filtering the `users` array passed to `UserTable`, or a shared data-fetching
   hook both read from.
-- `UserTable`'s `users` array is still two hardcoded, identical "John Doe" rows. **The backend
-  endpoint now exists** — `GET /user/list` (paginated, `?page`/`?pageSize`) — but there's no
-  `userApi` call for it yet (only `userApi.add` and `userApi.list`, which despite its name hits
-  `/user/status`, not `/user/list` — see [layers.md](./layers.md#2-data--srcapiauthts-srcapiuserts)).
-  Wiring this needs: a `userApi.list()` → `/user/list` call (rename the existing misleadingly-named
-  one first), a pagination-aware hook, and `UserTable.tsx` switched from its mock array to that
-  hook's data. `Table` itself is already generic — no change needed there.
+- `UserTable`'s `users` array is still two hardcoded, identical "John Doe" rows. **The data-layer
+  call now exists** — `userApi.pagination(page, pageSize)` → `GET /user/pagination` — but nothing
+  consumes it yet. Wiring this needs: a pagination-aware hook (state for `page`/`pageSize`, calls
+  `userApi.pagination`), and `UserTable.tsx` switched from its mock array to that hook's data.
+  `Table` itself is already generic — no change needed there.
 - **`AddUserModal` doesn't refresh anything after creating a user.** `onSuccess` just closes the
   modal (`onClose`) — `<UserCountCards>` and `<UserTable>` have their own independent
   `useEffect`‑on‑mount fetches with no shared invalidation, so a newly created user won't appear

@@ -25,7 +25,7 @@ pagination. Same layering as [auth](./auth.md) — this doc assumes you've read 
 | `status`         | `z.enum(["active", "inactive", "suspended"])` | same reasoning |
 | *(object)*       | `.refine(password === confirmPassword)`   | same cross-field check as `registerSchema` |
 
-`paginationSchema` — **query** params for `GET /user/list`:
+`paginationSchema` — **query** params for `GET /user/pagination`:
 
 | Field      | Rule                                         | Why |
 |------------|-----------------------------------------------|-----|
@@ -157,7 +157,7 @@ hand-written type that could drift out of sync with either.
 |---|---|---|
 | `POST /user/add` | `requireAuth`, `validate(addUserSchema)` | `addUserController` |
 | `GET /user/status` | `requireAuth` | `statusUserController` |
-| `GET /user/list` | `requireAuth`, `validateQuery(paginationSchema)` | `paginationUserController` |
+| `GET /user/pagination` | `requireAuth`, `validateQuery(paginationSchema)` | `paginationUserController` |
 
 **None of these have a role check yet** — `requireAuth` only proves "logged in," not "is an
 admin." Any authenticated user can currently create another user with `role: "admin"`, or read

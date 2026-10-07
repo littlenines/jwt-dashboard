@@ -3,7 +3,7 @@
 [← index](./README.md)
 
 - **No `/user/*` route has a role check — privilege escalation.** All three
-  (`POST /user/add`, `GET /user/status`, `GET /user/list`) are behind `requireAuth` only, which
+  (`POST /user/add`, `GET /user/status`, `GET /user/pagination`) are behind `requireAuth` only, which
   proves "logged in," not "is an admin." Any authenticated user can currently create a new user
   with `role: "admin"`, or read the user list/status counts. Needs a `requireRole("admin")`
   middleware (query `req.userId`'s role via `#lib/prisma`, same pattern `requireAuth` uses with

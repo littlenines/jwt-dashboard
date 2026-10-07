@@ -77,7 +77,7 @@ No body.
 | `200`  | ok | `{ "total": number, "active": number, "inactive": number, "suspended": number }` |
 | `401`  | not authenticated | `{ "message": "Not authenticated" }` |
 
-## `GET /user/list`
+## `GET /user/pagination`
 Query params: `?page=1&pageSize=10` (both optional — default `1`/`10`; `pageSize` capped at `50`).
 | Status | When | Body |
 |--------|------|------|

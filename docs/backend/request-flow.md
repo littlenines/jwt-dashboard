@@ -55,7 +55,7 @@ router.use('/user', userRouter);   // everything in user.route.ts is under /user
 |-----------------------|---------------------------------------------------|-----------------------------|
 | `POST /user/add`     | `requireAuth`, `validate(addUserSchema)`          | `addUserController`         |
 | `GET  /user/status`  | `requireAuth`                                     | `statusUserController`      |
-| `GET  /user/list`    | `requireAuth`, `validateQuery(paginationSchema)`  | `paginationUserController`  |
+| `GET  /user/pagination` | `requireAuth`, `validateQuery(paginationSchema)`  | `paginationUserController`  |
 
 Details in [user.md](./user.md).
 
