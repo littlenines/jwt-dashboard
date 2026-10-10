@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Pagination from "@/components/Pagination";
 import styles from "@/styles/components/Table.module.scss";
 
 export type TableColumn<T> = {
@@ -7,14 +8,23 @@ export type TableColumn<T> = {
     render: (row: T) => ReactNode;
 };
 
+type TablePagination = {
+    page: number;
+    pageSize: number;
+    total: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (pageSize: number) => void;
+};
+
 type TableProps<T> = {
     columns: TableColumn<T>[];
     data: T[];
     getRowKey: (row: T) => string | number;
     emptyMessage?: string;
+    pagination?: TablePagination;
 };
 
-const Table = <T,>({ columns, data, getRowKey, emptyMessage = "No data yet." }: TableProps<T>) => {
+const Table = <T,>({ columns, data, getRowKey, emptyMessage = "No data yet.", pagination }: TableProps<T>) => {
     return (
         <table className={styles.table}>
             <thead>
@@ -39,6 +49,15 @@ const Table = <T,>({ columns, data, getRowKey, emptyMessage = "No data yet." }: 
                     ))
                 )}
             </tbody>
+            {pagination && (
+                <tfoot>
+                    <tr>
+                        <td colSpan={columns.length}>
+                            <Pagination {...pagination} />
+                        </td>
+                    </tr>
+                </tfoot>
+            )}
         </table>
     )
 }

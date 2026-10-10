@@ -1,0 +1,22 @@
+@use "../abstracts" as *;
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.pagination_size {
+    width: 140px;
+}
+
+.pagination_info {
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+}
+
+.pagination_controls {
+    display: flex;
+    gap: 8px;
+}

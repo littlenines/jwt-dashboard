@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
 import Table, { type TableColumn } from "@/components/Table";
-import { userApi } from "@/api/user";
-import { type PaginatedUsers, type UserListItem } from "@/types/user";
+import { useUserPagination } from "@/hooks/useUserPagination";
+import { type UserListItem } from "@/types/user";
 import { dateFormat } from "@/util/dateFormat";
 import styles from "@/styles/components/UserTable.module.scss";
 
@@ -14,11 +13,7 @@ const columns: TableColumn<UserListItem>[] = [
 ];
 
 const UserTable = () => {
-  const [data, setData] = useState<PaginatedUsers>({ total: 0, users: [] });
-
-  useEffect(() => {
-    userApi.pagination(1, 10).then(setData).catch((error) => console.error(error));
-  }, [])
+  const { data, page, pageSize, handlePageChange, handlePageSizeChange } = useUserPagination()
 
     return (
         <section className={styles.user_table}>
@@ -26,7 +21,18 @@ const UserTable = () => {
                 <h4>Users ({data.total})</h4>
                 <p>A list of all users in your shop with their details and actions</p>
             </div>
-            <Table columns={columns} data={data.users} getRowKey={(user) => user.id} />
+            <Table
+                columns={columns}
+                data={data.users}
+                getRowKey={(user) => user.id}
+                pagination={{
+                    page,
+                    pageSize,
+                    total: data.total,
+                    onPageChange: handlePageChange,
+                    onPageSizeChange: handlePageSizeChange,
+                }}
+            />
         </section>
     )
 }
