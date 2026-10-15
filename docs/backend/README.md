@@ -11,7 +11,7 @@ decision** in the backend so the codebase can be understood without reading all 
 |-----|--------|
 | [conventions.md](./conventions.md) | TypeScript config, subpath imports, environment variables |
 | [data-model.md](./data-model.md)   | Prisma schema — `User`, `RefreshToken`; the admin seed |
-| [request-flow.md](./request-flow.md) | `app.ts` middleware chain, routing, `validate` / `validateQuery` / `errorHandler` / `requireAuth` middleware |
+| [request-flow.md](./request-flow.md) | `app.ts` middleware chain, routing, `validate` / `validateQuery` / `errorHandler` / `requireAuth` / `requireRole` middleware |
 | [auth.md](./auth.md)               | The `auth` feature file‑by‑file, and how the token model works |
 | [user.md](./user.md)               | The `user` feature — admin user creation, status counts, paginated + filtered listing |
 | [lib.md](./lib.md)                 | `src/lib/` shared primitives |
@@ -69,6 +69,7 @@ src/
     validate.ts               generic "validate req.body against a zod schema" middleware
     validateQuery.ts          same, but for req.query -> req.validatedQuery (see user.md)
     requireAuth.ts            verify the access-token cookie; set req.userId or 401
+    requireRole.ts            requireRole(...roles): caller's DB role/status must match, or 403
     errorHandler.ts           central Express error handler (last in the chain)
 
   types/

@@ -55,8 +55,9 @@ No body. Uses the `refreshToken` cookie if present.
 
 ---
 
-All endpoints below require a valid `accessToken` cookie (`requireAuth`) — **but not yet any
-specific role**. See [user.md](./user.md) and [todo.md](./todo.md).
+All endpoints below require a valid `accessToken` cookie (`requireAuth`). Only `POST /user/add`
+also checks the caller's role (`requireRole`); the two `GET`s don't yet. See
+[user.md](./user.md#routes-userroutets) and [todo.md](./todo.md).
 
 ## `POST /user/add`
 ```jsonc
@@ -68,6 +69,7 @@ specific role**. See [user.md](./user.md) and [todo.md](./todo.md).
 | `201`  | created | `{ "user": { id, email, username, role, status, createdAt } }` |
 | `400`  | body failed validation | `{ "errors": { field: [msg] } }` |
 | `401`  | not authenticated | `{ "message": "Not authenticated" }` |
+| `403`  | caller isn't an active `admin`/`manager` (checked after body validation, so a bad body gets `400` first) | `{ "message": "Not permitted" }` |
 | `409`  | email or username taken | `{ "message": "Email already registered" \| "Username already taken" }` |
 
 ## `GET /user/status`

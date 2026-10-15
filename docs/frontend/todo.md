@@ -55,6 +55,10 @@
   purely decorative right now.
 - `Navigation` hardcodes "Admin Panel" / "Shop Management" (header) and "Super Admin" (footer
   role) — only the username comes from `useAuth()`.
+- **No role-aware UI.** The "Add User" button shows for everyone; a non-admin only finds out via
+  the backend's `403` shown as the modal's error. `/auth/me` already returns `role`, so the
+  dashboard can hide/disable admin actions and show the real role in the sidebar footer. UX only —
+  the backend `requireRole` check is what actually enforces it.
 - **No loading / error state on the user table.** `useUserPagination` only exposes `data`; a
   failed fetch is `console.error`‑only and the table keeps showing the previous rows.
 - **`AddUserModal` doesn't refresh anything after creating a user.** `onSuccess` just closes the

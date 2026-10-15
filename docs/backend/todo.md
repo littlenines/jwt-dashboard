@@ -2,12 +2,21 @@
 
 [← index](./README.md)
 
-- **No `/user/*` route has a role check — privilege escalation.** All three
-  (`POST /user/add`, `GET /user/status`, `GET /user/pagination`) are behind `requireAuth` only, which
-  proves "logged in," not "is an admin." Any authenticated user can currently create a new user
-  with `role: "admin"`, or read the user list/status counts. Needs a `requireRole("admin")`
-  middleware (query `req.userId`'s role via `#lib/prisma`, same pattern `requireAuth` uses with
-  `#lib/jwt`) added to all three routes in `user.route.ts`. Planned, not yet done.
+- **Role checks are incomplete — privilege escalation.** `requireRole` exists
+  (`src/middleware/requireRole.ts`) but only guards `POST /user/add`:
+  - **A manager can create an admin.** `/user/add` allows `requireRole("admin", "manager")`,
+    and nothing compares the body's `role` to the caller's — a manager can create an admin and log
+    in as it. Either make the route `requireRole("admin")`, or pass the caller's role into
+    `addUserService` and only let managers create `staff`.
+  - **`GET /user/status` and `GET /user/pagination` have no role check.** Any logged-in user —
+    including a `staff` self-registered via `/auth/register` — can read the full user list and
+    counts. Add `requireRole(...)` to both.
+  - **Order on `/user/add`:** `requireRole` runs after `validate(addUserSchema)`, so an
+    unauthorized caller gets `400` field errors before the `403`. Move it right after
+    `requireAuth`.
+- **Suspended / inactive users can still log in.** `loginService` checks only the password, not
+  `status`, so a `suspended` user still gets tokens and can use `/auth/me` and the dashboard shell.
+  (`requireRole` does block them from guarded routes.) Check `status` in `loginService`.
 - **User search won't scale without an index.** `GET /user/pagination?search=` uses
   `contains` + `mode: "insensitive"` (`ILIKE '%term%'`), which can't use a B-tree index — it's a
   sequential scan. Fine for an admin table of this size; if it grows, add a `pg_trgm` GIN index on

@@ -3,11 +3,12 @@ import { requireAuth } from "../../middleware/requireAuth";
 import { addUserController, statusUserController, paginationUserController } from "./user.controller";
 import { validate } from "../../middleware/validate";
 import { validateQuery } from "../../middleware/validateQuery";
+import { requireRole } from "../../middleware/requireRole";
 import { addUserSchema, paginationSchema } from "./user.validate";
 
 const router = express.Router();
 
-router.post("/add", [requireAuth, validate(addUserSchema)], addUserController);
+router.post("/add", [requireAuth, validate(addUserSchema), requireRole("admin", "manager")], addUserController);
 
 router.get("/status", [requireAuth], statusUserController);
 

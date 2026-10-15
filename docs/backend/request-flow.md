@@ -3,7 +3,7 @@
 [← index](./README.md)
 
 How a request travels through the app: the middleware chain, routing, and the middleware
-(`validate`, `validateQuery`, `errorHandler`, `requireAuth`).
+(`validate`, `validateQuery`, `errorHandler`, `requireAuth`, `requireRole`).
 
 ## 1. `src/app.ts` — the middleware chain
 
@@ -53,7 +53,7 @@ router.use('/user', userRouter);   // everything in user.route.ts is under /user
 
 | Method & path        | Middleware                                       | Controller                 |
 |-----------------------|---------------------------------------------------|-----------------------------|
-| `POST /user/add`     | `requireAuth`, `validate(addUserSchema)`          | `addUserController`         |
+| `POST /user/add`     | `requireAuth`, `validate(addUserSchema)`, `requireRole("admin", "manager")` | `addUserController`         |
 | `GET  /user/status`  | `requireAuth`                                     | `statusUserController`      |
 | `GET  /user/pagination` | `requireAuth`, `validateQuery(paginationSchema)`  | `paginationUserController`  |
 
@@ -150,3 +150,37 @@ that pattern doesn't work for query strings:
 Query values are always strings (`?page=2` → `"2"`) — schemas used with `validateQuery` need
 `z.coerce.number()` (etc.), not plain `z.number()`, or every request with an actual value in
 that field fails validation and only a *missing* field (falling back to `.default(...)`) passes.
+
+## 7. `src/middleware/requireRole.ts` — role checks
+
+```ts
+export const requireRole = (...roles: Role[]): RequestHandler => async (req, res, next) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.userId! },
+    select: { role: true, status: true },
+  });
+
+  if (!user || user.status !== "active" || !roles.includes(user.role as Role)) {
+    return res.status(403).json({ message: "Not permitted" });
+  }
+
+  next();
+};
+```
+
+- A **factory**: `requireRole("admin")` or `requireRole("admin", "manager")` — the caller must
+  have one of the listed roles. Passes → `next()`; otherwise `403 { message: "Not permitted" }`.
+- **Must run after `requireAuth`** — it reads `req.userId!`, which only `requireAuth` sets.
+- Checks the **logged-in user** (looked up by `req.userId`), never anything in the request
+  body. (An earlier `validateAdmin` checked `req.body.role` — the role of the user *being
+  created* — so any client could pass it by sending `"role": "admin"`. Removed.)
+- Role and status come from the **DB, not the JWT**. One primary-key lookup per request, in
+  exchange for demotions/suspensions taking effect on the very next request instead of when the
+  access token expires (up to 15 min).
+- `status !== "active"` → `403` too, so a suspended or inactive account loses access
+  immediately even with a valid token. A deleted user (`findUnique` → `null`) is also `403`.
+- Put it **right after `requireAuth`**, before `validate(...)`, so an unauthorized caller gets
+  `403` rather than `400` field errors describing a valid body. `POST /user/add` currently has
+  it last — see [todo.md](./todo.md).
+- It talks to `#lib/prisma` directly rather than through a feature repository — it's
+  cross-cutting middleware, same level as `requireAuth` using `#lib/jwt`.

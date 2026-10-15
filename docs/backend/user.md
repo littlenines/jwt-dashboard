@@ -52,7 +52,7 @@ reassigned the way `req.body` can (Express 5 made it getter-only).
 Same shape as the auth controllers: read input → call one service → map the result → respond.
 No `try/catch` — unexpected throws go to the central `errorHandler`.
 
-### `addUserController` — behind `requireAuth`, `validate(addUserSchema)`
+### `addUserController` — behind `requireAuth`, `validate(addUserSchema)`, `requireRole("admin", "manager")`
 1. Read `{ email, username, password, role, status }` from the validated body.
 2. `addUserService(...)` → the new user, **or** `{ conflict: "email" | "username" }`.
 3. `"conflict" in result` → `409` with `"Email already registered"` / `"Username already taken"`.
@@ -193,11 +193,12 @@ hand-written type that could drift out of sync with either.
 
 | Method & path | Middleware | Controller |
 |---|---|---|
-| `POST /user/add` | `requireAuth`, `validate(addUserSchema)` | `addUserController` |
+| `POST /user/add` | `requireAuth`, `validate(addUserSchema)`, `requireRole("admin", "manager")` | `addUserController` |
 | `GET /user/status` | `requireAuth` | `statusUserController` |
 | `GET /user/pagination` | `requireAuth`, `validateQuery(paginationSchema)` | `paginationUserController` |
 
-**None of these have a role check yet** — `requireAuth` only proves "logged in," not "is an
-admin." Any authenticated user can currently create another user with `role: "admin"`, or read
-the user list/counts. See [todo.md](./todo.md) — a `requireRole("admin")` middleware is planned
-but not yet wired in.
+**Role checks are only partly in place.** `requireRole` ([request-flow.md](./request-flow.md#7-srcmiddlewarerequirerolets--role-checks))
+guards `POST /user/add` for admins and managers. Still open (see [todo.md](./todo.md)):
+- a **manager can create an admin** — nothing compares the body's `role` to the caller's;
+- `GET /user/status` and `GET /user/pagination` have **no role check** — any logged-in user,
+  including a self-registered `staff`, can read the user list and counts.
