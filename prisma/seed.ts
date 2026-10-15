@@ -7,7 +7,9 @@ async function main() {
   const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
   const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 
-  if (!ADMIN_PASSWORD || ADMIN_PASSWORD.length < 8) throw new Error("PASSWORD_SEED must be set in .env (min 8 characters)");
+  if (!ADMIN_EMAIL || !ADMIN_USERNAME) throw new Error("ADMIN_EMAIL and ADMIN_USERNAME must be set in .env");
+
+  if (!ADMIN_PASSWORD || ADMIN_PASSWORD.length < 8) throw new Error("ADMIN_PASSWORD must be set in .env (min 8 characters)");
 
   const usernameOwner = await prisma.user.findUnique({ where: { username: ADMIN_USERNAME }, select: { email: true } });
 

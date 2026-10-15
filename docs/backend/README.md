@@ -10,7 +10,7 @@ decision** in the backend so the codebase can be understood without reading all 
 | Doc | Covers |
 |-----|--------|
 | [conventions.md](./conventions.md) | TypeScript config, subpath imports, environment variables |
-| [data-model.md](./data-model.md)   | Prisma schema — `User`, `RefreshToken` |
+| [data-model.md](./data-model.md)   | Prisma schema — `User`, `RefreshToken`; the admin seed |
 | [request-flow.md](./request-flow.md) | `app.ts` middleware chain, routing, `validate` / `validateQuery` / `errorHandler` / `requireAuth` middleware |
 | [auth.md](./auth.md)               | The `auth` feature file‑by‑file, and how the token model works |
 | [user.md](./user.md)               | The `user` feature — admin user creation, status counts, paginated + filtered listing |
@@ -47,6 +47,7 @@ decision** in the backend so the codebase can be understood without reading all 
 | `pnpm prisma:generate`| `prisma generate`           | regenerate the client after a schema change |
 | `pnpm prisma:migrate` | `prisma migrate dev`        | create + apply a migration in dev |
 | `pnpm prisma:studio`  | `prisma studio`             | DB browser GUI |
+| `pnpm prisma:seed`    | `prisma db seed`            | create/refresh the admin account — see [data-model.md](./data-model.md#seeding-prismaseedts) |
 
 ---
 
@@ -94,11 +95,12 @@ src/
 
 prisma/
   schema.prisma               data model
+  seed.ts                     creates the first admin account (pnpm prisma:seed)
   migrations/                 SQL migration history
 
 generated/prisma/             Prisma client (generated, do not edit, gitignored ideally)
 docker-compose.yml            local Postgres
-prisma.config.ts              Prisma CLI config (schema path, migrations path, datasource URL)
+prisma.config.ts              Prisma CLI config (schema path, migrations path + seed command, datasource URL)
 tsconfig.json                 see conventions.md
 ```
 

@@ -36,6 +36,13 @@ Relative imports (`./auth.service`) are used *within* a feature folder; `#lib/..
 | `DATABASE_URL` | `prisma.config.ts`, `src/lib/prisma.ts` | Postgres connection string. Credentials must match `docker-compose.yml`. |
 | `JWT_SECRET`   | `src/lib/jwt.ts`           | HMAC key for **access** tokens |
 | `JWT_REFRESH`  | `src/lib/jwt.ts`           | HMAC key for **refresh** tokens (separate key = a leaked access secret can't forge refresh tokens) |
+| `ADMIN_EMAIL`  | `prisma/seed.ts`           | email of the seeded admin — also its login. Seed only; the server never reads it. |
+| `ADMIN_USERNAME` | `prisma/seed.ts`         | username of the seeded admin. Seed only. |
+| `ADMIN_PASSWORD` | `prisma/seed.ts`         | plaintext password for the seeded admin, min 8 chars; hashed with argon2 before it's stored. Seed only. |
+
+Write values as plain `KEY=value` (quotes optional) — no spaces around `=`, no trailing `;`.
+`dotenv` keeps anything after the value as part of it: `ADMIN_EMAIL = "a@b.com";` loads as
+`"a@b.com";`, quotes and semicolon included.
 
 ### Env loading order
 
