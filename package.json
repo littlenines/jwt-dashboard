@@ -12,7 +12,8 @@
 		"start": "tsx src/app.ts",
 		"prisma:generate": "prisma generate",
 		"prisma:migrate": "prisma migrate dev",
-		"prisma:studio": "prisma studio"
+		"prisma:studio": "prisma studio",
+		"prisma:seed": "prisma db seed"
 	},
 	"devDependencies": {
 		"@types/cookie-parser": "^1.4.10",
