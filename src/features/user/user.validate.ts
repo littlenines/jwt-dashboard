@@ -1,5 +1,7 @@
 import * as z from "zod";
 
+const emptyToUndefined = (value: unknown) => (value === "" ? undefined : value)
+
 export const addUserSchema = z.object({
     email: z.email().toLowerCase().trim(),
     username: z.string().trim().min(3).max(30),
@@ -15,5 +17,8 @@ export const addUserSchema = z.object({
 
 export const paginationSchema = z.object({
   page: z.coerce.number().min(1).default(1),
-  pageSize: z.coerce.number().min(10).max(50).default(10)
-})
+  pageSize: z.coerce.number().min(10).max(50).default(10),
+  search: z.preprocess(emptyToUndefined, z.string().trim().max(100).optional()),
+  role: z.preprocess(emptyToUndefined, z.enum(["staff", "admin", "manager"]).optional()),
+  status: z.preprocess(emptyToUndefined, z.enum(["active", "inactive", "suspended"]).optional()),
+});

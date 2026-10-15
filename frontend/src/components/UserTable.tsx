@@ -1,6 +1,5 @@
 import Table, { type TableColumn } from "@/components/Table";
-import { useUserPagination } from "@/hooks/useUserPagination";
-import { type UserListItem } from "@/types/user";
+import { type PaginatedUsers, type UserListItem } from "@/types/user";
 import { dateFormat } from "@/util/dateFormat";
 import styles from "@/styles/components/UserTable.module.scss";
 
@@ -12,8 +11,15 @@ const columns: TableColumn<UserListItem>[] = [
     { key: "lastLogin", header: "Last Login", render: (user) => user.lastLoginAt ? dateFormat(user.lastLoginAt) : "—" },
 ];
 
-const UserTable = () => {
-  const { data, page, pageSize, handlePageChange, handlePageSizeChange } = useUserPagination()
+type UserTableProps = {
+    data: PaginatedUsers;
+    page: number;
+    pageSize: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (pageSize: number) => void;
+};
+
+const UserTable = ({ data, page, pageSize, onPageChange, onPageSizeChange }: UserTableProps) => {
 
     return (
         <section className={styles.user_table}>
@@ -29,8 +35,8 @@ const UserTable = () => {
                     page,
                     pageSize,
                     total: data.total,
-                    onPageChange: handlePageChange,
-                    onPageSizeChange: handlePageSizeChange,
+                    onPageChange,
+                    onPageSizeChange,
                 }}
             />
         </section>

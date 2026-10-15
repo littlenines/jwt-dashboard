@@ -101,13 +101,14 @@ export const authApi = {
 export const userApi = {
   add:        (body: AddUserInput)              => http.post<{ user: User }>("/user/add", body).then(r => r.data.user),
   status:     ()                                => http.get<UserStatusCounts>("/user/status").then(r => r.data),
-  pagination: (page: number, pageSize: number)  => http.get<PaginatedUsers>("/user/pagination", { params: { page, pageSize } }).then(r => r.data),
+  pagination: (page: number, pageSize: number, filters: { search?: string; role?: string; status?: string } = {}) =>
+    http.get<PaginatedUsers>("/user/pagination", { params: { page, pageSize, ...filters } }).then(r => r.data),
 };
 ```
 
-> `userApi.pagination` exists as a data-layer call but nothing consumes it yet — there's no hook
-> (`useUserList`-style) built on top of it, and `UserTable` is still on mock data. See
-> [todo.md](./todo.md).
+`pagination` spreads the filters into axios `params`. Axios drops params whose value is
+`undefined`, so an unset filter never reaches the URL — that's why `useUserPagination` turns empty
+values into `undefined` rather than `""` (which axios *would* send as `search=`).
 
 Errors are left to propagate (axios rejects) — the presentation layer catches and runs them
 through `getErrorMessage`.
@@ -177,6 +178,37 @@ returns. The hook is what talks to the state (`useAuth`) and data (`authApi`) la
 | `useRegister()` | `{ values, setField, error, pending, submit }` | form state + `submit` → `authApi.register` → `navigate("/")` |
 | `useAddUser(onSuccess)` | `{ values, setField, error, pending, submit }` | form state + `submit` → `userApi.add` → `onSuccess()` |
 | `useUserStatuses()` | `UserStatusCounts` (no error/pending exposed) | fetch-on-mount — `userApi.status()` → `setStatus`; failures are `console.error`‑only, counts stay at the zeroed default |
+| `useUserPagination()` | `{ data, page, pageSize, search, role, status, handlePageChange, handlePageSizeChange, handleSearch, handleRole, handleStatus }` | list state for the dashboard's user table — see below |
+
+#### `useUserPagination()`
+
+The **URL query string is the state** (`useSearchParams`), not `useState`: `page`, `pageSize`,
+`search`, `role`, `status` are read from it on every render, so a reload or a shared link restores
+the same view. Only the fetched `data` (`{ total, users }`) is `useState`.
+
+- Missing params: `page`/`pageSize` fall back to `1`/`10`; `search`/`role`/`status` fall back to
+  `undefined` (`searchParams.get(...) || undefined`), so axios leaves them out of the request.
+- `handleSearch` / `handleRole` / `handleStatus` all go through one `setFilter(key, value)`: it
+  resets `page` to `1` (otherwise you can land on page 5 of a 1-page result) and **deletes** the
+  param when `value` is empty — that's how "All Roles" / a cleared search box remove the filter.
+- `handlePageSizeChange` also resets `page` to `1`.
+- The fetch effect depends on all five values and guards against **out-of-order responses**:
+
+```ts
+useEffect(() => {
+  let ignore = false;
+  userApi.pagination(page, pageSize, { search, role, status })
+    .then((result) => { if (!ignore) setData(result); })
+    .catch((error) => console.error(error));
+  return () => { ignore = true; };
+}, [page, pageSize, search, role, status]);
+```
+  When a dependency changes before the previous request settles, the cleanup marks it stale, so a
+  slow earlier response can't overwrite a newer one. Errors are `console.error`‑only, like
+  `useUserStatuses`.
+
+**Call it once.** Each call has its own `useEffect`, so two components calling it would each fetch.
+`Dashboard.tsx` calls it and passes values/callbacks to `<UserFilters>` and `<UserTable>` as props.
 
 ```tsx
 // useLogin.ts — the submit function
@@ -228,6 +260,7 @@ different thing entirely — generic component *behavior*, with no knowledge of 
 | `useActiveOverlay(ref, active)` | — | registers `ref.current` in a module‑level `Set` while `active` is true. `useClickOutside` treats a click landing inside *any* registered overlay as "inside," regardless of which component's `refs` it's checking against — this is what lets a `<Select>` menu live safely inside a `<Modal>`. |
 | `useSelect(onChange)` | `{ open, ref, menuRef, menuStyle, toggle, selectOption }` | open/close state for `<Select>`, built on `useClickOutside([ref, menuRef], close, open)` + `useActiveOverlay(menuRef, open)`. Also computes `menuStyle` (fixed‑position, flips above the trigger if there's not enough room below) via `useLayoutEffect` + scroll/resize listeners — a small floating‑menu positioning system. |
 | `useKeyDown(key, handler, enabled?)` | — | document `keydown` listener for one key (e.g. `"Escape"`), same ref‑stashing pattern as `useClickOutside` so the listener doesn't resubscribe every render. `<Modal>` uses it to close on Escape. |
+| `useDebounce(value, delay = 400)` | the debounced value | returns `value` only once it has stopped changing for `delay` ms (a `setTimeout` reset on every change). `<UserFilters>` uses it so the search box only updates the URL — and fires a request — after typing pauses. |
 
 Reusable beyond `<Select>`/`<Modal>` — anything that closes on an outside click or a key press
 is meant to reach for these rather than re‑implement the listeners.

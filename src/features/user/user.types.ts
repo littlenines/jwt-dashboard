@@ -15,3 +15,5 @@ export type PaginatedUsers = {
   total: number;
   users: UserListItem[];
 };
+
+export type UserFilters = { search?: string; role?: string; status?: string };

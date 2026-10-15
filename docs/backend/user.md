@@ -7,7 +7,7 @@ Files: `src/features/user/` — `user.route.ts`, `user.controller.ts`, `user.ser
 `user.repository.ts`, `user.validate.ts`, `user.types.ts`.
 
 Admin-facing user management: create a user, aggregate status counts, list users with
-pagination. Same layering as [auth](./auth.md) — this doc assumes you've read that one.
+pagination and optional search / role / status filters. Same layering as [auth](./auth.md) — this doc assumes you've read that one.
 
 ---
 
@@ -31,6 +31,16 @@ pagination. Same layering as [auth](./auth.md) — this doc assumes you've read 
 |------------|-----------------------------------------------|-----|
 | `page`     | `z.coerce.number().min(1).default(1)`        | query values are always strings (`?page=2` → `"2"`) — `z.coerce` converts before validating |
 | `pageSize` | `z.coerce.number().min(10).max(50).default(10)` | the `max(50)` caps how large a page a client can request |
+| `search`   | `z.preprocess(emptyToUndefined, z.string().trim().max(100).optional())` | free-text match on username/email; `max(100)` bounds the `ILIKE` pattern |
+| `role`     | `z.preprocess(emptyToUndefined, z.enum(["staff", "admin", "manager"]).optional())` | same allow-list as `addUserSchema` |
+| `status`   | `z.preprocess(emptyToUndefined, z.enum(["active", "inactive", "suspended"]).optional())` | same allow-list as `addUserSchema` |
+
+All three filters are **optional** — omitted means "don't filter on this." `emptyToUndefined`
+(`value === "" ? undefined : value`) runs first, so `?role=` or `?search=` is treated the same
+as leaving the param out instead of failing the enum check. The frontend doesn't send empty
+params anyway (see the frontend [layers.md](../frontend/layers.md#4-presentation--srchooks-srcpages-srccomponents)),
+so this is defense for hand-written URLs and other clients. A whitespace-only `search` passes
+validation, trims to `""`, and is then ignored by `buildUserWhere` (below).
 
 Validated via `validateQuery`, not `validate` — see [request-flow.md](./request-flow.md#6-srcmiddlewarevalidatequeryts--query-string-validation), because `req.query` can't be
 reassigned the way `req.body` can (Express 5 made it getter-only).
@@ -53,12 +63,15 @@ No `try/catch` — unexpected throws go to the central `errorHandler`.
 2. `200` with the counts object directly (no wrapper key).
 
 ### `paginationUserController` — behind `requireAuth`, `validateQuery(paginationSchema)`
-1. Read `{ page, pageSize }` from `req.validatedQuery` — **not** `req.query` (see below).
-2. `getUsersPaginationService(page, pageSize)` → `PaginatedUsers`.
+1. Read `{ page, pageSize, search, role, status }` from `req.validatedQuery` — **not**
+   `req.query` (see below).
+2. `getUsersPaginationService(page, pageSize, { search, role, status })` → `PaginatedUsers`.
+   The filters travel as one `UserFilters` object so the service and repository signatures don't
+   grow a positional argument per filter.
 3. `200` with `{ total, users }` directly.
 
 ```ts
-const { page, pageSize } = req.validatedQuery as z.infer<typeof paginationSchema>;
+const { page, pageSize, search, role, status } = req.validatedQuery as z.infer<typeof paginationSchema>;
 ```
 `req.validatedQuery` is typed `unknown` in `src/types/express.d.ts` (it has to be — that
 declaration is global, shared by every route, so it can't know route-by-route which schema
@@ -98,13 +111,16 @@ check: TypeScript doesn't narrow `group.status` from `string` to the literal uni
 way (`Array.prototype.includes` doesn't narrow in this TS version — confirmed by testing), so
 without it `counts[group.status] = ...` wouldn't type-check.
 
-### `getUsersPaginationService(page, pageSize): Promise<PaginatedUsers>`
+### `getUsersPaginationService(page, pageSize, filters): Promise<PaginatedUsers>`
 ```ts
-const [total, users] = await Promise.all([countUsers(), getUsersByPagination(page, pageSize)]);
+const [total, users] = await Promise.all([countUsersFiltered(filters), getUsersByPagination(page, pageSize, filters)]);
 return { total, users };
 ```
-Both queries run concurrently. `total` must come from a **separate, unfiltered** `count()` —
-not from `users.length` — because `users` is only the current page (at most `pageSize` rows).
+Both queries run concurrently. `total` must come from a **separate** `count()` — not from
+`users.length` — because `users` is only the current page (at most `pageSize` rows). That count
+uses the **same filters** as the page query (both go through `buildUserWhere`), so `total` is
+"users matching the filters," and the frontend's page count stays correct while filtering. The
+unfiltered `countUsers()` is still what `getUserStatusesService` uses for the stat cards.
 
 ---
 
@@ -115,9 +131,30 @@ not from `users.length` — because `users` is only the current page (at most `p
 | `findUserIdByEmail(email)` | `prisma.user.findUnique({ where: { email }, select: { id: true } })` |
 | `findUserIdByUsername(username)` | same, by `username` |
 | `addUser({ email, username, password, role, status, accept })` | `prisma.user.create`, `omit: { password, accept, updatedAt }` — keeps `role`/`status` in the response (unlike auth's `createUser`, which this admin-facing response doesn't need to hide) |
-| `countUsers()` | `prisma.user.count()` — total row count, no filter |
+| `countUsers()` | `prisma.user.count()` — total row count, no filter (stat cards) |
 | `countUsersByStatus()` | `prisma.user.groupBy({ by: ["status"], _count: { _all: true } })` |
-| `getUsersByPagination(page, pageSize)` | `prisma.user.findMany({ skip, take, orderBy: { createdAt: "desc" }, omit: { password, email, updatedAt, accept } })` |
+| `countUsersFiltered(filters)` | `prisma.user.count({ where: buildUserWhere(filters) })` — the paginated list's `total` |
+| `getUsersByPagination(page, pageSize, filters)` | `prisma.user.findMany({ where: buildUserWhere(filters), skip, take, orderBy: { createdAt: "desc" }, omit: { password, email, updatedAt, accept } })` |
+
+`buildUserWhere` (not exported) turns `UserFilters` into one `Prisma.UserWhereInput`, shared by
+both list queries so the rows and the count can never disagree:
+```ts
+const buildUserWhere = ({ search, role, status }: UserFilters): Prisma.UserWhereInput => ({
+  ...(role && { role }),
+  ...(status && { status }),
+  ...(search && {
+    OR: [
+      { username: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+    ],
+  }),
+});
+```
+Each filter is spread in only when it's truthy, so an absent filter adds no condition at all.
+Filters combine with **AND** (role *and* status *and* search); within `search`, username **or**
+email may match. `mode: "insensitive"` makes Prisma emit `ILIKE` (Postgres-only — fine here).
+Search matches `email` even though list rows `omit` it, so a match can come from a column the
+table doesn't show. `contains` can't use a regular B-tree index — see [todo.md](./todo.md).
 
 `skip`/`take` for `getUsersByPagination`:
 ```ts
@@ -148,6 +185,7 @@ hand-written type that could drift out of sync with either.
 | `UserStatusCounts` | `{ total, active, inactive, suspended }` (all `number`) | `getUserStatusesService` result |
 | `UserListItem` | `Prisma.UserGetPayload<{ omit: { password; email; updatedAt; accept } }>` — derived from Prisma, not hand-written, so it can't drift from the repository's actual `omit` | one row in `PaginatedUsers.users` |
 | `PaginatedUsers` | `{ total: number, users: UserListItem[] }` | `getUsersPaginationService` result |
+| `UserFilters` | `{ search?: string; role?: string; status?: string }` | the filter object passed controller → service → repository (`buildUserWhere`) |
 
 ---
 

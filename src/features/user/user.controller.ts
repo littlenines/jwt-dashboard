@@ -24,9 +24,9 @@ export const statusUserController = async (req: Request, res: Response) => {
 };
 
 export const paginationUserController = async (req: Request, res: Response) => {
-  const { page, pageSize } = req.validatedQuery as z.infer<typeof paginationSchema>;
+  const { page, pageSize, search, role, status } = req.validatedQuery as z.infer<typeof paginationSchema>;
 
-  const paginationResult = await getUsersPaginationService(page, pageSize);
+  const paginationResult = await getUsersPaginationService(page, pageSize, { search, role, status });
 
   return res.status(200).json(paginationResult);
 };

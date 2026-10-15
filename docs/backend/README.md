@@ -13,7 +13,7 @@ decision** in the backend so the codebase can be understood without reading all 
 | [data-model.md](./data-model.md)   | Prisma schema — `User`, `RefreshToken` |
 | [request-flow.md](./request-flow.md) | `app.ts` middleware chain, routing, `validate` / `validateQuery` / `errorHandler` / `requireAuth` middleware |
 | [auth.md](./auth.md)               | The `auth` feature file‑by‑file, and how the token model works |
-| [user.md](./user.md)               | The `user` feature — admin user creation, status counts, paginated listing |
+| [user.md](./user.md)               | The `user` feature — admin user creation, status counts, paginated + filtered listing |
 | [lib.md](./lib.md)                 | `src/lib/` shared primitives |
 | [api.md](./api.md)                 | Endpoint reference + the security rationale |
 | [todo.md](./todo.md)              | Known gaps / hardening backlog |

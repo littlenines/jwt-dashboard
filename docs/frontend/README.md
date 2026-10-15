@@ -73,7 +73,7 @@ src/
 
   api/
     auth.ts                    DATA: authApi.login / register / logout / me
-    user.ts                    DATA: userApi.add / list (status counts)
+    user.ts                    DATA: userApi.add / status / pagination (page, pageSize, filters)
 
   types/
     auth.ts                    wire shapes — User, LoginInput, RegisterInput
@@ -91,6 +91,8 @@ src/
     useRegister.ts             register form state + submit -> authApi.register -> navigate
     useAddUser.ts              admin "create user" form state + submit -> userApi.add -> onSuccess()
     useUserStatuses.ts         fetch-on-mount: GET /user/status -> UserStatusCounts for <UserCountCards>
+    useUserPagination.ts       page/pageSize/search/role/status in the URL -> GET /user/pagination; called once in Dashboard
+    useDebounce.ts             generic "value, but only after it stops changing for N ms" hook (search box)
     useSelect.ts               open/close + fixed-position menu + selection state for <Select>
     useClickOutside.ts         generic "call this when a mousedown lands outside these ref(s)" hook
     useKeyDown.ts              generic "call this when a given key is pressed" hook (e.g. Escape)
@@ -113,11 +115,12 @@ src/
     Title.tsx                  page heading (title + description) with an action slot
     Button.tsx                 generic icon + label button (admin theme, not the auth SubmitButton)
     CountCard.tsx  UserCountCards.tsx     the 4 stat cards <- useUserStatuses() (real data, GET /user/status)
-    Table.tsx                  generic, reusable <table> — columns + data + getRowKey, no card/title of its own
-    UserTable.tsx              the "Users" card wrapping <Table>: row type, mock data, columns
+    Table.tsx                  generic, reusable <table> — columns + data + getRowKey, optional pagination footer
+    Pagination.tsx             page-size <Select> + "Page X of Y" + Previous/Next — rendered in <Table>'s <tfoot>
+    UserTable.tsx              the "Users" card wrapping <Table>: columns; data + paging come in as props
     Search.tsx                 controlled search input with a magnifying-glass icon
     Select.tsx                 controlled dropdown (options/value/onChange), checkmarks the active one
-    UserFilters.tsx            composes <Search> + two <Select> into the toolbar row (not wired to <UserTable>)
+    UserFilters.tsx            <Search> (debounced) + role/status <Select>s; values + callbacks come in as props
 
     // modal / overlay primitives
     Portal.tsx                 createPortal(children, document.body) — renders outside the normal DOM tree
@@ -159,22 +162,26 @@ public/                        served as-is at "/" — favicon.svg, *.svg illust
 └── footer: {username} + role + <SignOut> "Sign Out"
 
 <main class="global_layout">         margin-left: $sidebar-width, offsets the fixed sidebar
+│                                    Dashboard calls useUserPagination() once, feeds both of:
 ├── <Title>                          "User Management" + description
 │   └── {children}                   <Button icon={<Plus/>} onClick={...}>Add User</Button>
 ├── <UserCountCards>                 <- useUserStatuses() (GET /user/status, real data)
 │   └── <CountCard> × 4              total / active / inactive / suspended
-├── <UserFilters>
-│   ├── <Search>                     name/email text filter
-│   ├── <Select>                     role filter
-│   └── <Select>                     status filter
-├── <UserTable>                      card: "Users (N)" + description
-│   └── <Table>                      generic — columns + mock `users` data
+├── <UserFilters>                    search/role/status + onSearch/onRole/onStatus (props)
+│   ├── <Search>                     name/email text filter, debounced 400ms
+│   ├── <Select>                     role filter ("All Roles" = no filter)
+│   └── <Select>                     status filter ("All Status" = no filter)
+├── <UserTable>                      data/page/pageSize + onPageChange/onPageSizeChange (props)
+│   └── <Table>                      generic — columns + data.users, card heading "Users (N)"
+│       └── <Pagination>             in <tfoot>: page size, "Page X of Y", Previous/Next
 └── {isAddUserOpen && <AddUserModal>}  conditional; opened by the Title's "Add User" <Button>
     └── <Modal> -> <Field> × 4, <Select> × 2  <- useAddUser() (POST /user/add, real data)
 ```
 
-`<UserFilters>` and `<UserTable>` are independent siblings — nothing in the former filters the
-latter yet (see [todo.md](./todo.md)). `isAddUserOpen` is local `useState` in `Dashboard.tsx`;
+`Dashboard.tsx` owns the list state: it calls `useUserPagination()` **once** and passes values and
+callbacks down, so `<UserFilters>` and `<UserTable>` stay in sync and each change fires a single
+request. The state itself lives in the URL query string (`?page=2&role=admin`), so filters survive
+a reload and are shareable. `isAddUserOpen` is local `useState` in `Dashboard.tsx`;
 closing the modal (Cancel, outside click, Escape, or a successful submit) just unmounts it —
 nothing refreshes `<UserCountCards>` or `<UserTable>` afterward (see [todo.md](./todo.md)).
 

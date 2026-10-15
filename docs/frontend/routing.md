@@ -85,12 +85,13 @@ Each page is markup only — all state and behaviour come from a hook in `src/ho
 > ([backend/auth.md](../backend/auth.md#authvalidatets--request-body-schemas)).
 
 ### `Dashboard.tsx`
-Composed from components, plus **one piece of local state**: `isAddUserOpen`, gating the
-"Add User" modal.
+Composed from components, plus **one piece of local state** — `isAddUserOpen`, gating the
+"Add User" modal — and the user list state from `useUserPagination()`.
 
 ```tsx
 const Dashboard = () => {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const { data, page, pageSize, search, role, status, handlePageChange, handlePageSizeChange, handleSearch, handleRole, handleStatus } = useUserPagination();
 
   return (
     <>
@@ -100,8 +101,10 @@ const Dashboard = () => {
           <Button icon={<Plus />} onClick={() => setIsAddUserOpen(true)}>Add User</Button>
         </Title>
         <UserCountCards />
-        <UserFilters />
-        <UserTable />
+        <UserFilters search={search} role={role} status={status}
+                     onSearch={handleSearch} onRole={handleRole} onStatus={handleStatus} />
+        <UserTable data={data} page={page} pageSize={pageSize}
+                   onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
         {isAddUserOpen && <AddUserModal onClose={() => setIsAddUserOpen(false)} />}
       </main>
     </>
@@ -117,8 +120,10 @@ const Dashboard = () => {
   guarantees `status === "authed"` here, so `auth.user` is available. Sign-out is the same
   `authApi.logout() → auth.clear() (local, no request) → navigate("/")` sequence used elsewhere.
 - `<UserCountCards>` is wired to real data (`useUserStatuses()` → `GET /user/status`).
-  `<UserFilters>` and `<UserTable>` are not — see [components.md](./components.md#data-display)
-  and [todo.md](./todo.md).
+- `<UserFilters>` and `<UserTable>` share one `useUserPagination()` call made **here**, not inside
+  either component — one effect, one request per change, and both always see the same state.
+  The state lives in the URL query (`/dashboard?page=2&search=john&role=staff`). See
+  [layers.md](./layers.md#useuserpagination) and [components.md](./components.md#filters).
 - **`<AddUserModal>` is conditionally rendered**, not always mounted — `{isAddUserOpen && ...}`
   mounts/unmounts it rather than hiding it with CSS, so its form state (`useAddUser`) resets
   every time it's reopened. `onClose` is passed in as `useAddUser`'s `onSuccess` too, so a

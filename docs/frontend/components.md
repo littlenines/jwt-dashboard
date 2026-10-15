@@ -3,8 +3,8 @@
 [← index](./README.md)
 
 All function components. All presentational except `AuthLayout` (composition), `ProtectedRoute`
-(reads session state), and `Navigation`/`UserFilters` (read/hold their own state — see their
-sections below). Styling is via CSS Modules from `src/styles/components/` — see
+(reads session state), `Navigation` (reads session state), and `UserFilters` (holds the
+local, not-yet-debounced search text — see its section below). Styling is via CSS Modules from `src/styles/components/` — see
 [styling.md](./styling.md).
 
 Two unrelated UI families live here: the **auth pages** (`AuthLayout` and everything under it)
@@ -100,7 +100,8 @@ cards just stay at `0` (see [layers.md](./layers.md#4-presentation--srchooks-src
 ### `Table` — `Table.tsx`
 ```tsx
 type TableColumn<T> = { key: string; header: string; render: (row: T) => ReactNode };
-type TableProps<T> = { columns: TableColumn<T>[]; data: T[]; getRowKey: (row: T) => string | number; emptyMessage?: string };
+type TablePagination = { page: number; pageSize: number; total: number; onPageChange: (page: number) => void; onPageSizeChange: (pageSize: number) => void };
+type TableProps<T> = { columns: TableColumn<T>[]; data: T[]; getRowKey: (row: T) => string | number; emptyMessage?: string; pagination?: TablePagination };
 ```
 Generic, reusable `<table>` — no title, no card, no border of its own (that's deliberately left to
 the caller; see `UserTable` below). `<thead>`/`<tbody>` built from `columns`; each cell is
@@ -109,15 +110,30 @@ currency string) instead of `Table` guessing at a cell type. Renders one `emptyM
 (default `"No data yet."`) spanning all columns when `data` is empty. Styling is intentionally
 minimal — just `th { font-weight: 500 }` — matching what the table actually had before it was
 split out; it isn't a place to add borders/padding/hover opinions that weren't there originally.
+When `pagination` is passed, a `<tfoot>` row spanning all columns renders `<Pagination {...pagination} />`;
+omit it and the table has no footer.
+
+### `Pagination` — `Pagination.tsx`
+```tsx
+type PaginationProps = { page: number; pageSize: number; total: number; onPageChange: (page: number) => void; onPageSizeChange: (pageSize: number) => void };
+```
+Fully controlled — owns no state. Renders a page-size `<Select>` (10 / 20 / 50 per page, matching
+the backend's `pageSize` range), `"Page {page} of {totalPages}"` where
+`totalPages = Math.max(1, Math.ceil(total / pageSize))` (so an empty result reads "Page 1 of 1",
+not "of 0"), and Previous/Next `<Button variant="secondary">`s disabled at either end.
 
 ### `UserTable` — `UserTable.tsx`
-No props. The "Users" instance of `Table`: defines the `User` row type, a hardcoded `users` array
-(two identical "John Doe" rows — placeholder data), the 7 columns (User/Role/Status/Orders/Total
-Spent/Created/Last Login), and wraps `<Table>` in its own card (`<section class="user_table">` +
-a `<div class="user_table_info">` heading) — the card/heading styling that used to live directly
-in this file's SCSS before `Table` was extracted stayed here rather than moving to `Table`.
-**Not connected to `<UserFilters>`** — the search/role/status state there doesn't filter this
-table's rows (see [todo.md](./todo.md)).
+```tsx
+type UserTableProps = { data: PaginatedUsers; page: number; pageSize: number; onPageChange: (page: number) => void; onPageSizeChange: (pageSize: number) => void };
+```
+The "Users" instance of `Table`. Presentational: `Dashboard.tsx` passes in the data and paging
+from its single `useUserPagination()` call. Defines the 5 columns over `UserListItem`
+(User/Role/Status/Created/Last Login — dates via `dateFormat`, a missing `lastLoginAt` shows `—`),
+forwards paging as `<Table pagination={...}>`, and wraps it in its own card
+(`<section class="user_table">` + a `<div class="user_table_info">` heading showing
+`Users ({data.total})`). That `total` is the **filtered** count from the backend, so the heading
+reflects the current search/role/status. The card/heading styling stayed here rather than moving
+to `Table` when `Table` was extracted.
 
 ## Filters
 
@@ -126,7 +142,7 @@ table's rows (see [todo.md](./todo.md)).
 type SearchProps = InputHTMLAttributes<HTMLInputElement>;
 ```
 `<div>` → `<MagnifyingGlass>` + `<input>`. Fully controlled from outside — pass `value` +
-`onChange` like a native input. No debouncing.
+`onChange` like a native input. No debouncing of its own — `<UserFilters>` debounces around it.
 
 ### `Select` — `Select.tsx`
 ```tsx
@@ -148,12 +164,52 @@ doesn't close the modal when you pick an option. The `findSelectedOption` lookup
 `src/lib/select.ts`.
 
 ### `UserFilters` — `UserFilters.tsx`
-No props. Holds its own `search` / `role` / `status` state and renders `<Search>` + two
-`<Select>`s in a bordered toolbar row (same card look as `CountCard`, via `$radius-lg` /
-`$color-border`). **Nothing consumes this state yet** — `Dashboard.tsx` renders `<UserFilters>`
-and `<UserTable>` as independent siblings, so typing in the search box or changing a dropdown
-doesn't touch the table's rows. The `role` options (`Admin`/`Manager`/`Staff`) are placeholders,
-not real data, too. See [todo.md](./todo.md).
+```tsx
+type UserFiltersProps = {
+  search?: string; role?: string; status?: string;
+  onSearch: (value: string) => void; onRole: (value: string) => void; onStatus: (value: string) => void;
+};
+```
+Renders `<Search>` + two `<Select>`s in a bordered toolbar row (same card look as `CountCard`, via
+`$radius-lg` / `$color-border`). Values and callbacks come from `Dashboard.tsx`'s
+`useUserPagination()`.
+
+- **Selects**: role (`Admin`/`Manager`/`Staff`) and status (`Active`/`Inactive`/`Suspended`)
+  options match the backend's `paginationSchema` enums. The "All Roles" / "All Status" option has
+  value `""`, which the hook treats as "remove this filter." `value={role ?? ""}` because
+  `<Select>` needs a string and an unset filter is `undefined`.
+- **Search is debounced.** The input is bound to local `searchInput` state (so typing is instant),
+  `useDebounce(searchInput)` lags it by 400ms, and only the debounced value is pushed up:
+
+```tsx
+const onDebouncedSearch = useEffectEvent((value: string) => {
+  if (value !== (search ?? "")) onSearch(value);
+});
+
+useEffect(() => {
+  onDebouncedSearch(debouncedSearch);
+}, [debouncedSearch]);
+```
+  `useEffectEvent` (React 19.2) keeps the effect keyed on `debouncedSearch` alone while still
+  reading the latest `search`/`onSearch` — no stale closure, no `exhaustive-deps` suppression.
+  The `!==` guard skips a no-op `onSearch` on mount, which would otherwise reset `page` to `1`
+  when you open a URL like `?page=3&search=john`.
+- **The box follows the URL.** When `search` changes from outside (browser back/forward, a
+  shared link), `searchInput` is reset to it — done **during render**, not in an effect:
+
+```tsx
+const [prevSearch, setPrevSearch] = useState(search);
+
+if (search !== prevSearch) {
+  setPrevSearch(search);
+  setSearchInput(search ?? "");
+}
+```
+  This is React's "adjust state when a prop changes" pattern: React re-renders immediately
+  with the new value before painting, so there's no flash of the old text, and the
+  `set-state-in-effect` lint rule stays happy. It doesn't loop with the debounce: when the
+  debounced value is what changed the URL, `searchInput` already equals it, and the
+  `onDebouncedSearch` `!==` guard skips the no-op push afterwards.
 
 ## Modals & overlays
 

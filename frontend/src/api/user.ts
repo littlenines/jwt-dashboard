@@ -6,5 +6,5 @@ export const userApi = {
 
   status: () => http.get<UserStatusCounts>("/user/status").then((r) => r.data),
 
-  pagination: (page: number, pageSize: number) => http.get<PaginatedUsers>("/user/pagination", { params: { page, pageSize } }).then((r) => r.data),
+  pagination: (page: number, pageSize: number, filters: { search?: string; role?: string; status?: string } = {}) => http.get<PaginatedUsers>("/user/pagination", { params: { page, pageSize, ...filters } }).then((r) => r.data),
 };

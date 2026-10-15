@@ -8,6 +8,10 @@
   with `role: "admin"`, or read the user list/status counts. Needs a `requireRole("admin")`
   middleware (query `req.userId`'s role via `#lib/prisma`, same pattern `requireAuth` uses with
   `#lib/jwt`) added to all three routes in `user.route.ts`. Planned, not yet done.
+- **User search won't scale without an index.** `GET /user/pagination?search=` uses
+  `contains` + `mode: "insensitive"` (`ILIKE '%term%'`), which can't use a B-tree index — it's a
+  sequential scan. Fine for an admin table of this size; if it grows, add a `pg_trgm` GIN index on
+  `username` and `email` (raw SQL in a migration, since Prisma's schema can't declare it).
 - **No rate limiting** on `/login` and `/register` — brute force / enumeration is unbounded.
 - `.env` `APP_ENV` is `"locale"`. It works (anything ≠ `"production"` = dev), but rename it to
   something sensible, and set `APP_ENV=production` in the deployed environment or `Secure`

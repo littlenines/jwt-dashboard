@@ -55,23 +55,13 @@
   purely decorative right now.
 - `Navigation` hardcodes "Admin Panel" / "Shop Management" (header) and "Super Admin" (footer
   role) — only the username comes from `useAuth()`.
-- `UserFilters`' `role` options (`Admin`/`Manager`/`Staff`) are hardcoded placeholders, and
-  nothing reads the filter state yet — see the connection item below. (`UserCountCards` is
-  **done** — it's wired to `GET /user/status` via `useUserStatuses()`.)
-- **`UserFilters` and `UserTable` aren't connected.** `Dashboard.tsx` renders both, but they're
-  independent siblings with their own local state/data — typing in `<Search>` or changing a
-  `<Select>` does nothing to the table's rows. Needs either lifting `{search, role, status}` up
-  to `Dashboard` and filtering the `users` array passed to `UserTable`, or a shared data-fetching
-  hook both read from.
-- `UserTable`'s `users` array is still two hardcoded, identical "John Doe" rows. **The data-layer
-  call now exists** — `userApi.pagination(page, pageSize)` → `GET /user/pagination` — but nothing
-  consumes it yet. Wiring this needs: a pagination-aware hook (state for `page`/`pageSize`, calls
-  `userApi.pagination`), and `UserTable.tsx` switched from its mock array to that hook's data.
-  `Table` itself is already generic — no change needed there.
+- **No loading / error state on the user table.** `useUserPagination` only exposes `data`; a
+  failed fetch is `console.error`‑only and the table keeps showing the previous rows.
 - **`AddUserModal` doesn't refresh anything after creating a user.** `onSuccess` just closes the
-  modal (`onClose`) — `<UserCountCards>` and `<UserTable>` have their own independent
-  `useEffect`‑on‑mount fetches with no shared invalidation, so a newly created user won't appear
-  anywhere until a full page reload. Needs either a shared "refetch users" callback passed down,
+  modal (`onClose`) — `<UserCountCards>` (`useUserStatuses`) and the table (`useUserPagination`
+  in `Dashboard`) have no shared invalidation, so a newly created user won't appear until a full
+  page reload. `useUserPagination` living in `Dashboard` makes this easier now: expose a
+  `refetch` from it and call it alongside `onClose`. Needs either a shared "refetch users" callback passed down,
   or a small data-fetching layer with cache invalidation (React Query, etc.) once this app has
   enough of these cases to justify it.
 - `CountCard`'s `title` prop is typed as a bare `string`, but its color only resolves for exactly

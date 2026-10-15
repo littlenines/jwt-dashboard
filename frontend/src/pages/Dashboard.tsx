@@ -7,10 +7,25 @@ import UserCountCards from "@/components/UserCountCards";
 import UserFilters from "@/components/UserFilters";
 import UserTable from "@/components/UserTable";
 import AddUserModal from "@/components/AddUserModal";
+import { useUserPagination } from "@/hooks/useUserPagination";
 
 const Dashboard = () => {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
 
+  const {
+    data,
+    page,
+    pageSize,
+    search,
+    role,
+    status,
+    handlePageChange,
+    handlePageSizeChange,
+    handleSearch,
+    handleRole,
+    handleStatus,
+  } = useUserPagination();
+  
   return (
     <>
       <Navigation />
@@ -21,9 +36,22 @@ const Dashboard = () => {
 
         <UserCountCards />
 
-        <UserFilters />
+        <UserFilters
+          search={search}
+          role={role}
+          status={status}
+          onSearch={handleSearch}
+          onRole={handleRole}
+          onStatus={handleStatus}
+        />
 
-        <UserTable />
+        <UserTable
+          data={data}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
 
         {isAddUserOpen && <AddUserModal onClose={() => setIsAddUserOpen(false)} />}
       </main>

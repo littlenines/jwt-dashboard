@@ -78,11 +78,23 @@ No body.
 | `401`  | not authenticated | `{ "message": "Not authenticated" }` |
 
 ## `GET /user/pagination`
-Query params: `?page=1&pageSize=10` (both optional — default `1`/`10`; `pageSize` capped at `50`).
+Query params (all optional):
+
+| Param | Default | Rule |
+|-------|---------|------|
+| `page` | `1` | `>= 1` |
+| `pageSize` | `10` | `10`–`50` |
+| `search` | — | case-insensitive substring match on `username` **or** `email`, max 100 chars |
+| `role` | — | `staff` \| `admin` \| `manager` |
+| `status` | — | `active` \| `inactive` \| `suspended` |
+
+Filters combine with AND. An empty value (`?role=`) is the same as omitting it. `total` is the
+number of users **matching the filters**, not the whole table.
+Example: `?page=1&pageSize=10&search=john&role=staff`.
 | Status | When | Body |
 |--------|------|------|
 | `200`  | ok | `{ "total": number, "users": [{ id, username, role, status, createdAt, lastLoginAt }] }` |
-| `400`  | `page`/`pageSize` out of range | `{ "errors": { field: [msg] } }` |
+| `400`  | `page`/`pageSize` out of range, unknown `role`/`status`, `search` > 100 chars | `{ "errors": { field: [msg] } }` |
 | `401`  | not authenticated | `{ "message": "Not authenticated" }` |
 
 ---
